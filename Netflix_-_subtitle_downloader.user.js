@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     2.0.2
+// @version     2.0.3
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       none
@@ -80,7 +80,7 @@ var DOWNLOADED_WITH = 'Subtitles downloaded with "Netflix subtitle downloader" U
       mutation.addedNodes.forEach(function(node) {
         if(node.nodeName.toUpperCase() == 'DIV') {
           let trackMenu = (node.parentNode || node).querySelector(TRACK_MENU);
-          if(trackMenu != null && trackMenu.querySelector('.subtitle-downloader-menu') == null) {
+          if(trackMenu !== null && trackMenu.querySelector('.subtitle-downloader-menu') === null) {
             let ol = document.createElement('ol');
             ol.setAttribute('class', 'subtitle-downloader-menu player-timed-text-tracks track-list track-list-subtitles');
             ol.innerHTML = DOWNLOAD_MENU;
@@ -107,20 +107,20 @@ var DOWNLOADED_WITH = 'Subtitles downloaded with "Netflix subtitle downloader" U
   var getStyles = function(xmlDoc) {
     var styles = {};
     var styleElems = xmlDoc.querySelectorAll('styling style');
-    for(let i = 0; i < styleElems.length; ++i) {
+    for(let i=0, l=styleElems.length; i < l; ++i) {
       let id = styleElems[i].getAttribute('xml:id');
       styles[id] = {start: '', end: ''};
-      TRANSFORMATION.forEach(function(styling) {
-        if(GM_config.get(styling.t) && styleElems[i].hasAttribute(styling.a)) {
-          let value = styleElems[i].getAttribute(styling.a).trim();
-          let equal = value === styling.v;
-          let color = 'color' in styling;
+      for(let j=0, m=TRANSFORMATION.length; j < m; ++j) {
+        if(GM_config.get(TRANSFORMATION[j].t) && styleElems[i].hasAttribute(TRANSFORMATION[j].a)) {
+          let value = styleElems[i].getAttribute(TRANSFORMATION[j].a).trim();
+          let equal = value === TRANSFORMATION[j].v;
+          let color = 'color' in TRANSFORMATION[j];
           if(equal != color) {
-            styles[id].start += '<' + styling.t + ('color' in styling ? ' color="' + value + '"': '') + '>';
-            styles[id].end = '</' + styling.t + '>' + styles[id].end;
+            styles[id].start += '<' + TRANSFORMATION[j].t + ('color' in TRANSFORMATION[j] ? ' color="' + value + '"': '') + '>';
+            styles[id].end = '</' + TRANSFORMATION[j].t + '>' + styles[id].end;
           }
         }
-      });
+      }
       if(styles[id].start === '')
         delete styles[id];
     }
@@ -133,7 +133,7 @@ var DOWNLOADED_WITH = 'Subtitles downloaded with "Netflix subtitle downloader" U
       for(let i = 0; i < regionElems.length; ++i) {
         let id = regionElems[i].getAttribute('xml:id');
         let value = regionElems[i].getAttribute('tts:displayAlign');
-        if(value == null) {
+        if(value === null) {
           let styles = regionElems[i].querySelectorAll('style');
           for(let j = 0; j < styles.length; ++j) {
             if(styles[j].hasAttribute('tts:displayAlign')) {
@@ -247,7 +247,7 @@ function getTitle(full) {
     }
     title += 'WEBRip.Netflix';
     var selectedSubs = document.querySelector(SELECTED_SUBS);
-    if(selectedSubs != null)
+    if(selectedSubs !== null)
       title += '.' + selectedSubs.getAttribute('data-id').split(';')[2];
   }
   return title;
@@ -268,11 +268,11 @@ function setCurrentSubFile(name, content, count) {
 // convert XML subs to SRT and set as current subs
 function processXmlSubs(responseText, count) {
   var title = getTitle(true);
-  if(title == null)
+  if(title === null)
     window.setTimeout(processXmlSubs, 200, responseText, count);
   else {
     var srt = xmlToSrt(responseText);
-    if(srt != null)
+    if(srt !== null)
       setCurrentSubFile(title + '.srt', srt, count);
   }
 }

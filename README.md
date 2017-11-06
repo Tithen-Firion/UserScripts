@@ -4,6 +4,22 @@
 
 Adds buttons to download subtitles in `.srt` format for movie, season and episode.
 
+## Netflix - subtitle downloader
+
+Allows you to download subs from Netflix shows and movies.
+
+Text based subtitles are downloaded in `.srt` format. Basic font formatting is supported: bold, italic, underline, color and position (by default turned off in options; only top and bottom of a screen).
+
+Image based subtitles are downloaded as a `.zip`. Inside you've got all subs in `.png` format and `.xml` file with timestamps which can be opened in Subtitle Edit for OCR. Let me know if other programs can open it.
+
+You can also convert them to other image based formats:
+Select **Tools** -> **Batch** convert, add `.xml` file(s) to **Input files** box, select **Format** and hit **Convert**.
+
+Or using command line:
+`SubtitleEdit /convert "F:\subs\test\manifest_ttml2.xml" Blu-raysup`
+`Blu-raysup` for `.sup` files
+`VobSub` for `.sub` files
+
 # Libraries
 
 ## xhrHijacker

@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.0
+// @version     1.0.1
 // @namespace   tithen-firion.github.io
 // @include     https://www.amazon.com/gp/video/*
 // @include     https://www.amazon.com/gp/product/*
@@ -19,8 +19,7 @@ document.head.appendChild(s);
 
 // XML to SRT
 function xmlToSrt(xmlString) {
-  try{
-  xmlString = xmlString.replace(/<tt:br\/>/gi, '\n')
+  xmlString = xmlString.replace(/<tt:br\/>/gi, '\n');
   try {
     let parser = new DOMParser();
     var xmlDoc = parser.parseFromString(xmlString, 'text/xml');
@@ -40,8 +39,7 @@ function xmlToSrt(xmlString) {
     srtLines.push('');
   }
   return srtLines.join('\n');
-  }catch(e){console.error(e);}
-};
+}
 
 // download subs and save them
 function downloadSubs(url, title, downloadVars) {
@@ -50,10 +48,10 @@ function downloadSubs(url, title, downloadVars) {
   req.onload = function() {
     var srt = xmlToSrt(req.response);
     if(downloadVars) {
-      downloadVars['zip'].file(title, srt);
-      --downloadVars['subCounter'];
-      if((downloadVars['subCounter']|downloadVars['infoCounter']) == 0)
-        downloadVars['zip'].generateAsync({type:"blob"})
+      downloadVars.zip.file(title, srt);
+      --downloadVars.subCounter;
+      if((downloadVars.subCounter|downloadVars.infoCounter) === 0)
+        downloadVars.zip.generateAsync({type:"blob"})
           .then(function(content) {
             saveAs(content, 'subs.zip');
           });
@@ -72,19 +70,19 @@ function downloadInfo(url, downloadVars) {
   req.open('get', url);
   req.onload = function() {
     var info = JSON.parse(req.response);
-    var epInfo = info['catalogMetadata']['catalog'];
-    var ep = epInfo['episodeNumber'];
+    var epInfo = info.catalogMetadata.catalog;
+    var ep = epInfo.episodeNumber;
     var title, season;
-    if(epInfo['type'] == 'MOVIE' || ep == 0)
-      title = epInfo['title'];
+    if(epInfo.type == 'MOVIE' || ep === 0)
+      title = epInfo.title;
     else {
-      info['catalogMetadata']['family']['tvAncestors'].forEach(function(tvAncestor) {
-        switch(tvAncestor['catalog']['type']) {
+      info.catalogMetadata.family.tvAncestors.forEach(function(tvAncestor) {
+        switch(tvAncestor.catalog.type) {
           case 'SEASON':
-            season = tvAncestor['catalog']['seasonNumber'];
+            season = tvAncestor.catalog.seasonNumber;
             break;
           case 'SHOW':
-            title = tvAncestor['catalog']['title'];
+            title = tvAncestor.catalog.title;
             break;
         }
       });
@@ -93,7 +91,7 @@ function downloadInfo(url, downloadVars) {
     title = title.replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.');
     title += '.WEBRip.Amazon.';
     var languages = new Set();
-    var subs = info['subtitleUrls'];
+    var subs = info.subtitleUrls;
     if(subs.length > 1 && !downloadVars) {
       downloadVars = {
         subCounter: 0,
@@ -102,17 +100,17 @@ function downloadInfo(url, downloadVars) {
       };
     }
     subs.forEach(function(subInfo) {
-      let lang = subInfo['languageCode'];
+      let lang = subInfo.languageCode;
       if(languages.has(lang))
-        lang += '.' + subInfo['index'];
+        lang += '.' + subInfo.index;
       else
         languages.add(lang);
       if(downloadVars)
-        ++downloadVars['subCounter'];
-      downloadSubs(subInfo['url'], title + lang + '.srt', downloadVars);
+        ++downloadVars.subCounter;
+      downloadSubs(subInfo.url, title + lang + '.srt', downloadVars);
     });
     if(downloadVars)
-      --downloadVars['infoCounter'];
+      --downloadVars.infoCounter;
   };
   req.send(null);
 }

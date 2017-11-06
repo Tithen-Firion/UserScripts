@@ -1,3 +1,9 @@
+# UserScripts
+
+## Amazon Video - subtitle downloader
+
+Adds buttons to download subtitles in `.srt` format for movie, season and episode.
+
 # Libraries
 
 ## xhrHijacker

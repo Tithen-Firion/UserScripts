@@ -4,6 +4,8 @@
 
 Adds buttons to download subtitles in `.srt` format for movie, season and episode.
 
+Install from [here](https://github.com/Tithen-Firion/UserScripts/raw/master/Amazon_Video_-_subtitle_downloader.user.js), [OpenUserJS](https://openuserjs.org/scripts/Tithen-Firion/Amazon_Video_-_subtitle_downloader) or [Greasyfork](https://greasyfork.org/pl/scripts/34885-amazon-video-subtitle-downloader).
+
 ## Netflix - subtitle downloader
 
 Allows you to download subs from Netflix shows and movies.
@@ -19,6 +21,8 @@ Or using command line:
 `SubtitleEdit /convert "F:\subs\test\manifest_ttml2.xml" Blu-raysup`
 `Blu-raysup` for `.sup` files
 `VobSub` for `.sub` files
+
+Install from [here](https://github.com/Tithen-Firion/UserScripts/raw/master/Netflix_-_subtitle_downloader.user.js), [OpenUserJS](https://openuserjs.org/scripts/Tithen-Firion/Netflix_-_subtitle_downloader) or [Greasyfork](https://greasyfork.org/pl/scripts/26654-netflix-subtitle-downloader).
 
 # Libraries
 

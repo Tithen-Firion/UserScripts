@@ -1,8 +1,8 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     2.0.3
+// @version     2.0.4
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       none
@@ -23,7 +23,7 @@ var DOWNLOAD_MENU = `<lh class="list-header">Netflix subtitle downloader</lh>
 <li class="track download">Download subs for this episode</li>
 <li class="track download-all">Download subs from this ep till last available</li>`;
 
-var CSS = `.player-timed-text-tracks, .track-list-subtitles{ border-right:1px solid #000 }
+var SCRIPT_CSS = `.player-timed-text-tracks, .track-list-subtitles{ border-right:1px solid #000 }
 .player-timed-text-tracks+.player-timed-text-tracks, .track-list-subtitles+.track-list-subtitles{ border-right:0 }
 #player-menu-track-settings .subtitle-downloader-menu li.list-header,
 .audio-subtitle-controller .subtitle-downloader-menu lh.list-header{ display:none }`;
@@ -71,7 +71,7 @@ var DOWNLOADED_WITH = 'Subtitles downloaded with "Netflix subtitle downloader" U
 
   // add CSS style
   var s = document.createElement('style');
-  s.innerHTML = CSS;
+  s.innerHTML = SCRIPT_CSS;
   document.head.appendChild(s);
 
   // add menu when it's not there

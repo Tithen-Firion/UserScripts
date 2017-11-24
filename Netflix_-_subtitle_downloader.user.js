@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     2.0.4
+// @version     2.1.0
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       none
@@ -288,6 +288,12 @@ function downloadImageSubs(url, count) {
   };
   req.send(null);
 }
+function imageSubDetection(response, count, url) {
+  let arr = new Uint8Array(response);
+  var str = String.fromCharCode(arr[1], arr[2], arr[3]);
+  if(str == 'idx' || str == 'PNG')
+    downloadImageSubs(url, count);
+}
 
 // download subs for current episode
 function downloadThis() {
@@ -321,20 +327,35 @@ function downloadAll() {
   }
 }
 
+//parse URL to get parameters
+function parseURL(url) {
+  var vars = {};
+  var params = url.slice(url.indexOf('?') + 1).split('&');
+  params.forEach(param => {
+    let paramPair = param.split('=');
+    vars[paramPair[0]] = paramPair[1];
+  });
+  return vars;
+}
 
 
-var IDs = {}, counter = 0, batch = false, currentImageSubs = '', currentSubFile, zip;
+var IDs = {}, counter = 0, batch = false, currentSubFile, zip, imageSubIDs = [], imageSubURLs = {};
 xhrHijacker(function(xhr, id, origin, args) {
   if(origin === 'open' && window.location.pathname.startsWith('/watch/')) {
-    if(args[1].indexOf('/?o=') > -1) {
+    let url = args[1];
+    if(url.indexOf('/?o=') > -1) {
       IDs[id] = counter++;
     }
     else {
-      var m = args[1].match(/^(.*?\/range\/)\d+-\d+(\?.*?)(&random=[^&]+)?$/);
-      if(m !== null && typeof m[3] == 'undefined' && currentImageSubs != m[2]) {
-        currentImageSubs = m[2];
-        console.log('Image subs detected:', args[1]);
-        downloadImageSubs(m[1] + '1-0' + m[2] + '&random=0', counter++);
+      let pattern = /\/range\/\d+-\d+\?/;
+      let m = url.match(pattern);
+      if(m !== null) {
+        let params = parseURL(url);
+        if(imageSubIDs.indexOf(params.o) === -1) {
+          IDs[id] = counter++;
+          imageSubIDs.push(params.o);
+          imageSubURLs[id] = url.replace(pattern, '/range/1-0?');
+        }
       }
     }
   }
@@ -342,7 +363,14 @@ xhrHijacker(function(xhr, id, origin, args) {
     if(id in IDs && IDs.hasOwnProperty(id)) {
       let c = IDs[id];
       delete IDs[id];
-      processXmlSubs(xhr.response, c);
+      if(id in imageSubURLs && imageSubURLs.hasOwnProperty(id)) {
+        let url = imageSubURLs[id];
+        delete imageSubURLs[id];
+        imageSubDetection(xhr.response, c, url);
+      }
+      else {
+        processXmlSubs(xhr.response, c);
+      }
     }
   }
 });

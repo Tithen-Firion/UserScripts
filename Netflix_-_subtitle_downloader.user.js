@@ -2,13 +2,13 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     2.1.0
+// @version     2.2.0
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       none
 // @require     https://cdn.rawgit.com/Tithen-Firion/UserScripts/7bd6406c0d264d60428cfea16248ecfb4753e5e3/libraries/xhrHijacker.js?version=1.0
 // @require     https://cdn.rawgit.com/sizzlemctwizzle/GM_config/232c002a7421f10b666c6205b9f495367ba9dac2/gm_config.js?version=2016-11-03
-// @require     https://cdn.rawgit.com/Stuk/jszip/28d10c924285063b17b73b7db1572e1375f4b924/dist/jszip.min.js?version=3.1.4
+// @require     https://cdn.rawgit.com/Stuk/jszip/579beb1d45c8d586d8be4411d5b2e48dea018c06/dist/jszip.min.js?version=3.1.5
 // @require     https://cdn.rawgit.com/eligrey/FileSaver.js/5ed507ef8aa53d8ecfea96d96bc7214cd2476fd2/FileSaver.min.js?version=1.3.3
 // ==/UserScript==
 
@@ -253,38 +253,37 @@ function getTitle(full) {
   return title;
 }
 
-function setCurrentSubFile(name, content, count) {
+function setCurrentSubFile(extension, content, count) {
   if(typeof currentSubFile == 'undefined' || currentSubFile.count < count) {
-    currentSubFile = {
-      name: name,
-      content: content,
-      count: count
-    };
-    if(batch)
-      downloadAll();
+    let title = getTitle(true);
+    if(title === null)
+      window.setTimeout(setCurrentSubFile, 200, extension, content, count);
+    else {
+      currentSubFile = {
+        name: title + extension,
+        content: content,
+        count: count
+      };
+      if(batch)
+        downloadAll();
+    }
   }
 }
 
 // convert XML subs to SRT and set as current subs
 function processXmlSubs(responseText, count) {
-  var title = getTitle(true);
-  if(title === null)
-    window.setTimeout(processXmlSubs, 200, responseText, count);
-  else {
-    var srt = xmlToSrt(responseText);
-    if(srt !== null)
-      setCurrentSubFile(title + '.srt', srt, count);
-  }
+  var srt = xmlToSrt(responseText);
+  if(srt !== null)
+    setCurrentSubFile('.srt', srt, count);
 }
 
 // download and process subs in image format
 function downloadImageSubs(url, count) {
   var req = new XMLHttpRequest();
   req.open('GET', url);
-  req.responseType = 'blob';
+  req.responseType = 'arraybuffer';
   req.onload = function() {
-    let title = getTitle(true);
-    setCurrentSubFile(title + '.zip', req.response, count);
+    setCurrentSubFile('.zip', req.response, count);
   };
   req.send(null);
 }
@@ -300,27 +299,23 @@ function downloadThis() {
   if(typeof currentSubFile == 'undefined')
     window.setTimeout(downloadThis, 100);
   else {
-    var blob = currentSubFile.content instanceof Blob ?
-               currentSubFile.content :
-               new Blob([currentSubFile.content], {type: 'text/plain;charset=utf-8'});
+    var blob = new Blob([currentSubFile.content]);
     saveAs(blob, currentSubFile.name, true);
   }
 }
 //download subs from this ep till last available
 function downloadAll() {
   batch = true;
-  if(typeof currentSubFile == 'undefined')
-    window.setTimeout(downloadAll, 100);
-  else {
+  if(typeof currentSubFile !== 'undefined') {
     zip = zip || new JSZip();
     zip.file(currentSubFile.name, currentSubFile.content);
     var nextEp = document.querySelector(NEXT_EPISODE);
     if(nextEp)
       nextEp.click();
     else
-      zip.generateAsync({type:"blob"})
+      zip.generateAsync({type:'blob'})
         .then(function(content) {
-          saveAs(content, getTitle() + ".zip");
+          saveAs(content, getTitle() + '.zip');
           zip = undefined;
           batch = false;
         });

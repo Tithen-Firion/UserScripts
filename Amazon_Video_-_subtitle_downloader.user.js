@@ -2,14 +2,17 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.2
+// @version     1.3
 // @namespace   tithen-firion.github.io
 // @include     https://www.amazon.com/gp/video/*
 // @include     https://www.amazon.com/gp/product/*
+// @include     https://www.amazon.com/*/dp/*
 // @include     https://www.amazon.de/gp/video/*
 // @include     https://www.amazon.de/gp/product/*
+// @include     https://www.amazon.de/*/dp/*
 // @include     https://www.amazon.co.uk/gp/video/*
 // @include     https://www.amazon.co.uk/gp/product/*
+// @include     https://www.amazon.co.uk/*/dp/*
 // @include     https://www.primevideo.com/gp/video/*
 // @include     https://www.primevideo.com/detail/*
 // @grant       none

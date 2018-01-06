@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.3
+// @version     1.4
 // @namespace   tithen-firion.github.io
 // @include     https://www.amazon.com/gp/video/*
 // @include     https://www.amazon.com/gp/product/*
@@ -15,7 +15,8 @@
 // @include     https://www.amazon.co.uk/*/dp/*
 // @include     https://www.primevideo.com/gp/video/*
 // @include     https://www.primevideo.com/detail/*
-// @grant       none
+// @include     https://www.primevideo.com/region/*/detail/*
+// @grant       unsafeWindow
 // @require     https://cdn.rawgit.com/Tithen-Firion/UserScripts/7bd6406c0d264d60428cfea16248ecfb4753e5e3/libraries/xhrHijacker.js?version=1.0
 // @require     https://cdn.rawgit.com/Stuk/jszip/28d10c924285063b17b73b7db1572e1375f4b924/dist/jszip.min.js?version=3.1.4
 // @require     https://cdn.rawgit.com/eligrey/FileSaver.js/5ed507ef8aa53d8ecfea96d96bc7214cd2476fd2/FileSaver.min.js?version=1.3.3
@@ -184,7 +185,7 @@ function init(url) {
       if(id)
         selector = '.dv-el-title';
       else {
-        id = epElems[i].querySelector('.av-play-icon').getAttribute('data-title-id');
+        id = epElems[i].querySelector('input[name="ep-list-selector"]').value;
         selector = '.av-episode-meta-info';
       }
       epElems[i].querySelector(selector).parentNode.appendChild(createDownloadButton(id, 'episode'));
@@ -195,10 +196,10 @@ function init(url) {
   else {
     let pathNames = window.location.pathname.split('/');
     let id;
-    if(pathNames[1] !== 'detail')
-      id = pathNames[(pathNames[2] == 'video' ? 4 : 3)];
-    else
+    if(document.location.host.indexOf('primevideo') > -1)
       id = document.querySelector('input[name="itemId"]').value;
+    else
+      id = unsafeWindow.ue_pti;
     document.querySelector('#dv-main-bottom-section, .av-badges').appendChild(createDownloadButton(id, 'movie'));
   }
 }
@@ -207,6 +208,6 @@ var initialied = false, gUrl;
 // hijack xhr, we need to find out tokens and other parameters needed for subtitle info
 xhrHijacker(function(xhr, id, origin, args) {
   if(!initialied && origin === 'open')
-    if(args[1].indexOf('GetPlaybackResources') > -1)
+    if(args[1].indexOf('GetPlaybackResources') > -1 && args[1].indexOf('token=') > -1)
       init(args[1])
 });

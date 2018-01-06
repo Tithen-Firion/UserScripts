@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.4
+// @version     1.4.1
 // @namespace   tithen-firion.github.io
 // @include     https://www.amazon.com/gp/video/*
 // @include     https://www.amazon.com/gp/product/*
@@ -81,6 +81,7 @@ function downloadSubs(url, title, downloadVars) {
 function downloadInfo(url, downloadVars) {
   var req = new XMLHttpRequest();
   req.open('get', url);
+  req.withCredentials = true;
   req.onload = function() {
     var info = JSON.parse(req.response);
     var epInfo = info.catalogMetadata.catalog;

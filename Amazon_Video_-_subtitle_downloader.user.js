@@ -2,20 +2,10 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.4.1
+// @version     1.4.2
 // @namespace   tithen-firion.github.io
-// @include     https://www.amazon.com/gp/video/*
-// @include     https://www.amazon.com/gp/product/*
-// @include     https://www.amazon.com/*/dp/*
-// @include     https://www.amazon.de/gp/video/*
-// @include     https://www.amazon.de/gp/product/*
-// @include     https://www.amazon.de/*/dp/*
-// @include     https://www.amazon.co.uk/gp/video/*
-// @include     https://www.amazon.co.uk/gp/product/*
-// @include     https://www.amazon.co.uk/*/dp/*
-// @include     https://www.primevideo.com/gp/video/*
-// @include     https://www.primevideo.com/detail/*
-// @include     https://www.primevideo.com/region/*/detail/*
+// @include     /^https:\/\/www\.amazon\.(com|de|co\.uk)\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
+// @include     /^https:\/\/www\.primevideo\.com\/(gp\/video|(region\/.*?\/)?detail)/.+/
 // @grant       unsafeWindow
 // @require     https://cdn.rawgit.com/Tithen-Firion/UserScripts/7bd6406c0d264d60428cfea16248ecfb4753e5e3/libraries/xhrHijacker.js?version=1.0
 // @require     https://cdn.rawgit.com/Stuk/jszip/28d10c924285063b17b73b7db1572e1375f4b924/dist/jszip.min.js?version=3.1.4

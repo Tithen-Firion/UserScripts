@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.4.2
+// @version     1.4.3
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/www\.amazon\.(com|de|co\.uk)\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/www\.primevideo\.com\/(gp\/video|(region\/.*?\/)?detail)/.+/
@@ -199,6 +199,6 @@ var initialied = false, gUrl;
 // hijack xhr, we need to find out tokens and other parameters needed for subtitle info
 xhrHijacker(function(xhr, id, origin, args) {
   if(!initialied && origin === 'open')
-    if(args[1].indexOf('GetPlaybackResources') > -1 && args[1].indexOf('token=') > -1)
+    if(args[1].indexOf('/GetPlaybackResources') > -1)
       init(args[1])
 });

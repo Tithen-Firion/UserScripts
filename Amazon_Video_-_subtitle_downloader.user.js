@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.4.3
+// @version     1.4.4
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/www\.amazon\.(com|de|co\.uk)\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/www\.primevideo\.com\/(gp\/video|(region\/.*?\/)?detail)/.+/
@@ -74,6 +74,7 @@ function downloadInfo(url, downloadVars) {
   req.withCredentials = true;
   req.onload = function() {
     var info = JSON.parse(req.response);
+    try {
     var epInfo = info.catalogMetadata.catalog;
     var ep = epInfo.episodeNumber;
     var title, season;
@@ -115,6 +116,11 @@ function downloadInfo(url, downloadVars) {
     });
     if(downloadVars)
       --downloadVars.infoCounter;
+    }
+    catch(e) {
+      console.log(info);
+      alert(e);
+    }
   };
   req.send(null);
 }
@@ -137,7 +143,7 @@ function downloadAll(e) {
 
 // remove unnecessary parameters from URL
 function parseURL(url) {
-  var filter = ['consumptionType', 'deviceID', 'deviceTypeID', 'firmware', 'gascEnabled', 'marketplaceID', 'resourceUsage', 'userWatchSessionId', 'videoMaterialType', 'clientId', 'operatingSystemName', 'operatingSystemVersion', 'titleDecorationScheme', 'customerID', 'token'];
+  var filter = ['consumptionType', 'deviceID', 'deviceTypeID', 'firmware', 'gascEnabled', 'marketplaceID', 'userWatchSessionId', 'videoMaterialType', 'clientId', 'operatingSystemName', 'operatingSystemVersion', 'customerID', 'token'];
   var urlParts = url.split('?');
   var params = ['desiredResources=CatalogMetadata%2CSubtitleUrls'];
   urlParts[1].split('&').forEach(function(param) {
@@ -145,6 +151,8 @@ function parseURL(url) {
     if(filter.indexOf(p[0]) > -1)
       params.push(param);
   });
+  params.push('resourceUsage=CacheResources');
+  params.push('titleDecorationScheme=primary-content');
   params.push('asin=');
   urlParts[1] = params.join('&');
   return urlParts.join('?');

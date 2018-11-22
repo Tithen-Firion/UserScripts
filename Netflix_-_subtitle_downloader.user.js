@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     2.2.0
+// @version     2.2.1
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       none
@@ -232,12 +232,12 @@ function getTitle(full) {
   var titleElement = document.querySelector(MAIN_TITLE);
   if(titleElement === null)
     return null;
-  var title = titleElement.innerText.replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.');
+  var title = titleElement.textContent.replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.');
   if(full) {
     title += '.';
     var episodeElement = titleElement.nextElementSibling;
     if(episodeElement) {
-      var m = episodeElement.innerText.match(/^[^\d]*?(\d+)[^\d]*?(\d+)?[^\d]*?$/);
+      var m = episodeElement.textContent.match(/^[^\d]*?(\d+)[^\d]*?(\d+)?[^\d]*?$/);
       if(m && m.length == 3) {
         if(typeof m[2] == 'undefined') // example: Stranger Things season 1
           title += 'S01E' + m[1].padStart(2, '0') + '.';

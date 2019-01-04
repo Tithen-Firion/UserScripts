@@ -2,8 +2,9 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.0.0
+// @version     3.0.1
 // @namespace   tithen-firion.github.io
+// @include     https://www.netflix.com/*
 // @grant       unsafeWindow
 // @require     https://cdn.rawgit.com/Stuk/jszip/579beb1d45c8d586d8be4411d5b2e48dea018c06/dist/jszip.min.js?version=3.1.5
 // @require     https://cdn.rawgit.com/eligrey/FileSaver.js/283f438c31776b622670be002caf1986c40ce90c/dist/FileSaver.min.js?version=2018-12-29

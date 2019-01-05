@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.0.1
+// @version     3.0.2
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -31,7 +31,8 @@ const SUB_TYPES = {
   'closedcaptions': '[cc]'
 };
 
-let currentSubs, zip;
+let zip;
+let subCache = {};
 let batch = false;
 
 const randomProperty = obj => {
@@ -75,7 +76,10 @@ const getTitle = full => new Promise(resolve => {
 	_getTitle(full, resolve);
 });
 
-const processSubInfo = async tracks => {
+const processSubInfo = async result => {
+  if(result.isSupplemental)
+    return;
+  const tracks = result.timedtexttracks;
   const titleP = getTitle();
   const subs = {};
   for(const track of tracks) {
@@ -88,13 +92,14 @@ const processSubInfo = async tracks => {
     const lang = track.language + type + (track.isForcedNarrative ? '-forced' : '');
     subs[lang] = randomProperty(track.ttDownloadables[WEBVTT].downloadUrls);
   }
-  currentSubs = {titleP, subs};
+  subCache[result.movieId] = {titleP, subs};
 
   if(batch) {
   	downloadAll();
   }
 };
 
+const getMovieID = () => window.location.pathname.split('/').pop();
 
 
 const _save = async (_zip, title) => {
@@ -104,7 +109,7 @@ const _save = async (_zip, title) => {
 
 const _download = async _zip => {
   const showTitle = getTitle(false);
-	const {titleP, subs} = currentSubs;
+	const {titleP, subs} = subCache[getMovieID()];
   const downloaded = [];
   for(const [lang, url] of Object.entries(subs)) {
     const result = await fetch(url, {mode: "cors"});
@@ -175,8 +180,8 @@ observer.observe(document.body, { childList: true, subtree: true });
   unsafeWindow.JSON.parse = cloneInto(
     function (text) {
     	const data = parse(text);
-      if (data && data.result && data.result.timedtexttracks) {
-        processSubInfo(data.result.timedtexttracks);
+      if (data && data.result && data.result.timedtexttracks && data.result.movieId) {
+        processSubInfo(data.result);
       }
       return data;
     },

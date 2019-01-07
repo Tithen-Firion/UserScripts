@@ -27,7 +27,7 @@ const SCRIPT_CSS = `.player-timed-text-tracks, .track-list-subtitles{ border-rig
 .audio-subtitle-controller .subtitle-downloader-menu lh.list-header{ display:none }`;
 
 const SUB_TYPES = {
-	'subtitles': '',
+  'subtitles': '',
   'closedcaptions': '[cc]'
 };
 
@@ -65,7 +65,7 @@ const __getTitle = full => {
 };
 // helper function, periodically checking for the title and resolving promise if found
 const _getTitle = (full, resolve) => {
-	const title = __getTitle(full);
+  const title = __getTitle(full);
   if(title === null)
     window.setTimeout(_getTitle, 200, full, resolve);
   else
@@ -73,7 +73,7 @@ const _getTitle = (full, resolve) => {
 };
 // promise of a title
 const getTitle = full => new Promise(resolve => {
-	_getTitle(full, resolve);
+  _getTitle(full, resolve);
 });
 
 const processSubInfo = async result => {
@@ -95,7 +95,7 @@ const processSubInfo = async result => {
   subCache[result.movieId] = {titleP, subs};
 
   if(batch) {
-  	downloadAll();
+    downloadAll();
   }
 };
 
@@ -109,7 +109,7 @@ const _save = async (_zip, title) => {
 
 const _download = async _zip => {
   const showTitle = getTitle(false);
-	const {titleP, subs} = subCache[getMovieID()];
+  const {titleP, subs} = subCache[getMovieID()];
   const downloaded = [];
   for(const [lang, url] of Object.entries(subs)) {
     const result = await fetch(url, {mode: "cors"});
@@ -128,14 +128,14 @@ const _download = async _zip => {
 
 const downloadThis = async () => {
   const _zip = new JSZip();
-	const showTitle = await _download(_zip);
+  const showTitle = await _download(_zip);
   _save(_zip, showTitle);
 };
 
 const downloadAll = async () => {
   zip = zip || new JSZip();
-	batch = true;
-	const showTitle = await _download(zip);
+  batch = true;
+  const showTitle = await _download(zip);
   const nextEp = document.querySelector(NEXT_EPISODE);
   if(nextEp)
     nextEp.click();
@@ -179,7 +179,7 @@ observer.observe(document.body, { childList: true, subtree: true });
 (function(parse, stringify){
   unsafeWindow.JSON.parse = cloneInto(
     function (text) {
-    	const data = parse(text);
+      const data = parse(text);
       if (data && data.result && data.result.timedtexttracks && data.result.movieId) {
         processSubInfo(data.result);
       }

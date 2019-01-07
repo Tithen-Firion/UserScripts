@@ -2,14 +2,14 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.4.4
+// @version     1.4.5
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/www\.amazon\.(com|de|co\.uk)\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/www\.primevideo\.com\/(gp\/video|(region\/.*?\/)?detail)/.+/
 // @grant       unsafeWindow
-// @require     https://cdn.rawgit.com/Tithen-Firion/UserScripts/7bd6406c0d264d60428cfea16248ecfb4753e5e3/libraries/xhrHijacker.js?version=1.0
-// @require     https://cdn.rawgit.com/Stuk/jszip/28d10c924285063b17b73b7db1572e1375f4b924/dist/jszip.min.js?version=3.1.4
-// @require     https://cdn.rawgit.com/eligrey/FileSaver.js/5ed507ef8aa53d8ecfea96d96bc7214cd2476fd2/FileSaver.min.js?version=1.3.3
+// @require     https://cdn.jsdelivr.net/gh/Tithen-Firion/UserScripts@7bd6406c0d264d60428cfea16248ecfb4753e5e3/libraries/xhrHijacker.js?version=1.0
+// @require     https://cdn.jsdelivr.net/gh/Stuk/jszip@579beb1d45c8d586d8be4411d5b2e48dea018c06/dist/jszip.min.js?version=3.1.5
+// @require     https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js@283f438c31776b622670be002caf1986c40ce90c/dist/FileSaver.min.js?version=2018-12-29
 // ==/UserScript==
 
 // add CSS style

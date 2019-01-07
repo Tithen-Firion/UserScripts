@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.0.2
+// @version     3.0.3
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -146,9 +146,38 @@ const downloadAll = async () => {
   }
 };
 
+const processMessage = e => {
+  processSubInfo(e.detail);
+}
 
+const injection = () => {
+  const WEBVTT = 'webvtt-lssdh-ios8';
 
+  // hijack JSON.parse and JSON.stringify functions
+  ((parse, stringify) => {
+    JSON.parse = function (text) {
+      const data = parse(text);
+      if (data && data.result && data.result.timedtexttracks && data.result.movieId) {
+        window.dispatchEvent(new CustomEvent('netflix_sub_downloader_data', {detail: data.result}));
+      }
+      return data;
+    };
+    JSON.stringify = function (data) {
+      if (data && data.params && data.params.profiles) {
+        data.params.profiles.unshift(WEBVTT);
+      }
+      return stringify(data);
+    };
+  })(JSON.parse, JSON.stringify);
+}
 
+window.addEventListener('netflix_sub_downloader_data', processMessage, false);
+
+// inject script
+const sc = document.createElement('script');
+sc.innerHTML = '(' + injection.toString() + ')()';
+document.head.appendChild(sc);
+document.head.removeChild(sc);
 
 // add CSS style
 const s = document.createElement('style');
@@ -174,26 +203,3 @@ const observer = new MutationObserver(function(mutations) {
   });
 });
 observer.observe(document.body, { childList: true, subtree: true });
-
-// hijack JSON.parse and JSON.stringify functions
-(function(parse, stringify){
-  unsafeWindow.JSON.parse = cloneInto(
-    function (text) {
-      const data = parse(text);
-      if (data && data.result && data.result.timedtexttracks && data.result.movieId) {
-        processSubInfo(data.result);
-      }
-      return data;
-    },
-    window,
-    {cloneFunctions: true});
-  unsafeWindow.JSON.stringify = cloneInto(
-    function (data) {
-      if (data && data.params && data.params.profiles) {
-        data.params.profiles.unshift(WEBVTT);
-      }
-      return stringify(data);
-    },
-    window,
-    {cloneFunctions: true});
-})(unsafeWindow.JSON.parse, unsafeWindow.JSON.stringify);

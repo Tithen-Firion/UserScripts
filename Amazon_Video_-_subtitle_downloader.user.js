@@ -2,9 +2,12 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.4.5
+// @version     1.5.0
 // @namespace   tithen-firion.github.io
-// @include     /^https:\/\/www\.amazon\.(com|de|co\.uk)\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
+// @include     /^https:\/\/www\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
+// @include     /^https:\/\/www\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
+// @include     /^https:\/\/www\.amazon\.co\.uk\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
+// @include     /^https:\/\/www\.amazon\.co\.jp\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/www\.primevideo\.com\/(gp\/video|(region\/.*?\/)?detail)/.+/
 // @grant       unsafeWindow
 // @require     https://cdn.jsdelivr.net/gh/Tithen-Firion/UserScripts@7bd6406c0d264d60428cfea16248ecfb4753e5e3/libraries/xhrHijacker.js?version=1.0
@@ -181,16 +184,23 @@ function init(url) {
     for(let i=epElems.length; i--; ) {
       let id = epElems[i].getAttribute('data-aliases');
       let selector;
-      if(id)
-        selector = '.dv-el-title';
-      else {
+      if(id === null) {
         id = epElems[i].querySelector('input[name="ep-list-selector"]').value;
         selector = '.av-episode-meta-info';
       }
+      else if(id)
+        selector = '.dv-el-title';
+      else
+        continue;
+      id = id.split(',')[0];
       epElems[i].querySelector(selector).parentNode.appendChild(createDownloadButton(id, 'episode'));
       IDs.push(id);
     }
-    epList.previousElementSibling.appendChild(createDownloadButton(IDs.join(';'), 'season'));
+    let seasonButton = createDownloadButton(IDs.join(';'), 'season');
+    if(epList.previousElementSibling)
+    	epList.previousElementSibling.appendChild(seasonButton);
+    else
+      epList.parentNode.insertBefore(seasonButton, epList);
   }
   else {
     let pathNames = window.location.pathname.split('/');

@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.6.1
+// @version     1.6.2
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/www\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/www\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -99,7 +99,7 @@ function downloadInfo(url, downloadVars) {
     title = title.replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.');
     title += '.WEBRip.Amazon.';
     var languages = new Set();
-    var subs = info.subtitleUrls;
+    var subs = info.subtitleUrls || [];
     if(subs.length > 1 && !downloadVars) {
       downloadVars = {
         subCounter: 0,

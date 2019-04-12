@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.6.0
+// @version     1.6.1
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/www\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/www\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -181,17 +181,16 @@ function init(url) {
   if(epElems.length > 0) {
     let IDs = [];
     for(let i=epElems.length; i--; ) {
-      let id = epElems[i].getAttribute('data-aliases');
-      let selector;
-      if(id === null) {
-        id = epElems[i].querySelector('input[name="ep-list-selector"]').value;
+      let selector, id, el;
+      if((el = epElems[i].querySelector('input[name="highlight-list-selector"]')) !== null) {
+        id = el.id.replace('selector-', '');
+        selector = '.dv-ajaxable.js-episode-offers';
+      }
+      else if((el = epElems[i].querySelector('input[name="ep-list-selector"]')) !== null) {
+        id = el.value;
         selector = '.av-episode-meta-info';
       }
-      else if(id === '') {
-        id = epElems[i].querySelector('input[name="highlight-list-selector"]').id.replace('selector-', '');
-        selector = '.dv-ajaxable.js-episode-offers'
-      }
-      else if(id)
+      else if(id = epElems[i].getAttribute('data-aliases'))
         selector = '.dv-el-title';
       else
         continue;

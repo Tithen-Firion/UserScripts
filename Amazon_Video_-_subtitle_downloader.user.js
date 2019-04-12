@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.5.1
+// @version     1.6.0
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/www\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/www\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -175,18 +175,21 @@ function init(url) {
   initialied = true;
   gUrl = parseURL(url);
   console.log(gUrl);
-  var epList = document.querySelector('#dv-episode-list, .av-episode-list');
-  if(epList) {
+
+  let button;
+  let epElems = document.querySelectorAll('.dv-episode-container, .avu-context-card, .js-node-episode-container');
+  if(epElems.length > 0) {
     let IDs = [];
-    let epElems = epList.querySelectorAll('.dv-episode-container');
-    if(epElems.length === 0)
-      epElems = epList.querySelectorAll('.avu-context-card');
     for(let i=epElems.length; i--; ) {
       let id = epElems[i].getAttribute('data-aliases');
       let selector;
       if(id === null) {
         id = epElems[i].querySelector('input[name="ep-list-selector"]').value;
         selector = '.av-episode-meta-info';
+      }
+      else if(id === '') {
+        id = epElems[i].querySelector('input[name="highlight-list-selector"]').id.replace('selector-', '');
+        selector = '.dv-ajaxable.js-episode-offers'
       }
       else if(id)
         selector = '.dv-el-title';
@@ -196,11 +199,7 @@ function init(url) {
       epElems[i].querySelector(selector).parentNode.appendChild(createDownloadButton(id, 'episode'));
       IDs.push(id);
     }
-    let seasonButton = createDownloadButton(IDs.join(';'), 'season');
-    if(epList.previousElementSibling)
-    	epList.previousElementSibling.appendChild(seasonButton);
-    else
-      epList.parentNode.insertBefore(seasonButton, epList);
+    button = createDownloadButton(IDs.join(';'), 'season');
   }
   else {
     let pathNames = window.location.pathname.split('/');
@@ -210,8 +209,9 @@ function init(url) {
     else
       id = unsafeWindow.ue_pti;
     id = id.split(',')[0];
-    document.querySelector('#dv-main-bottom-section, .av-badges').appendChild(createDownloadButton(id, 'movie'));
+    button = createDownloadButton(id, 'movie');
   }
+  document.querySelector('#dv-main-bottom-section, .av-badges').appendChild(button);
 }
 
 var initialied = false, gUrl;

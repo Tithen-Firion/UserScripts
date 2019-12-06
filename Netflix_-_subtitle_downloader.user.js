@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.0.6
+// @version     3.0.7
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -23,6 +23,7 @@ const DOWNLOAD_MENU = `<lh class="list-header">Netflix subtitle downloader</lh>
 
 const SCRIPT_CSS = `.player-timed-text-tracks, .track-list-subtitles{ border-right:1px solid #000 }
 .player-timed-text-tracks+.player-timed-text-tracks, .track-list-subtitles+.track-list-subtitles{ border-right:0 }
+.subtitle-downloader-menu { list-style:none }
 #player-menu-track-settings .subtitle-downloader-menu li.list-header,
 .audio-subtitle-controller .subtitle-downloader-menu lh.list-header{ display:none }`;
 
@@ -57,6 +58,9 @@ const __getTitle = full => {
           title.push(`S01E${m[1].padStart(2, '0')}`);
         else
           title.push(`S${m[1].padStart(2, '0')}E${m[2].padStart(2, '0')}`);
+      }
+      else {
+        title.push(encodeURIComponent(episodeElement.textContent.trim().replace(/\s+/, '.')));
       }
     }
     title.push('WEBRip.Netflix');

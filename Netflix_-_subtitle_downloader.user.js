@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.0.7
+// @version     3.0.8
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -52,15 +52,12 @@ const __getTitle = full => {
   if(full) {
     const episodeElement = titleElement.nextElementSibling;
     if(episodeElement) {
-      const m = episodeElement.textContent.match(/^[^\d]*?(\d+)[^\d]*?(\d+)?[^\d]*?$/);
+      const m = episodeElement.textContent.match(/^[^\d]*(\d+)[^\d]+(\d+)[^\d]*$/);
       if(m && m.length == 3) {
-        if(typeof m[2] == 'undefined') // example: Stranger Things season 1
-          title.push(`S01E${m[1].padStart(2, '0')}`);
-        else
-          title.push(`S${m[1].padStart(2, '0')}E${m[2].padStart(2, '0')}`);
+        title.push(`S${m[1].padStart(2, '0')}E${m[2].padStart(2, '0')}`);
       }
       else {
-        title.push(encodeURIComponent(episodeElement.textContent.trim().replace(/\s+/, '.')));
+        title.push(episodeElement.textContent.trim().replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.'));
       }
     }
     title.push('WEBRip.Netflix');

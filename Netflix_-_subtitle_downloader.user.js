@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.0.11
+// @version     3.0.12
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -36,9 +36,8 @@ let zip;
 let subCache = {};
 let batch = false;
 
-const randomProperty = obj => {
-  const keys = Object.keys(obj);
-  return obj[keys[keys.length * Math.random() << 0]];
+const popRandomElement = arr => {
+  return arr.splice(arr.length * Math.random() << 0, 1)[0];
 };
 
 // get show name or full name with episode number
@@ -91,7 +90,7 @@ const processSubInfo = async result => {
     if(typeof type === 'undefined')
       type = `[${track.rawTrackType}]`;
     const lang = track.language + type + (track.isForcedNarrative ? '-forced' : '');
-    subs[lang] = randomProperty(track.ttDownloadables[WEBVTT].downloadUrls);
+    subs[lang] = Object.values(track.ttDownloadables[WEBVTT].downloadUrls);
   }
   subCache[result.movieId] = {titleP, subs};
 
@@ -112,10 +111,16 @@ const _download = async _zip => {
   const showTitle = getTitle(false);
   const {titleP, subs} = subCache[getMovieID()];
   const downloaded = [];
-  for(const [lang, url] of Object.entries(subs)) {
-    const result = await fetch(url, {mode: "cors"});
-    const data = await result.text();
-    downloaded.push({lang, data});
+  for(const [lang, urls] of Object.entries(subs)) {
+    while(urls.length > 0) {
+      let url = popRandomElement(urls);
+      const result = await fetch(url, {mode: "cors"});
+      const data = await result.text();
+      if(data.length > 0) {
+        downloaded.push({lang, data});
+        break;
+      }
+    }
   }
   const title = await titleP;
 

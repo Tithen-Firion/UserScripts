@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.7.0
+// @version     1.7.1
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/www\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/www\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -70,7 +70,7 @@ s.innerHTML = 'p.download:hover { cursor:pointer }';
 document.head.appendChild(s);
 
 // XML to SRT
-function xmlToSrt(xmlString) {
+function xmlToSrt(xmlString, lang) {
   xmlString = xmlString.replace(/<tt:br\/>/gi, '\n');
   try {
     let parser = new DOMParser();
@@ -87,6 +87,9 @@ function xmlToSrt(xmlString) {
   for(let i=0, l=lines.length; i < l; ++i) {
     let text = lines[i].innerHTML.trim();
     if(text != '') {
+      if(lang.indexOf('ar') == 0)
+      	text = text.replace(/^(?!\u202B|\u200F)/gm, '\u202B');
+
       srtLines.push(i+1);
       srtLines.push(lines[i].getAttribute('begin').replace('.',',') + ' --> ' + lines[i].getAttribute('end').replace('.',','));
       srtLines.push(text);
@@ -97,12 +100,12 @@ function xmlToSrt(xmlString) {
 }
 
 // download subs and save them
-function downloadSubs(url, title, downloadVars) {
+function downloadSubs(url, title, downloadVars, lang) {
   var req = new XMLHttpRequest();
   req.open('get', url);
   req.onload = function() {
     progressBar.increment();
-    var srt = xmlToSrt(req.response);
+    var srt = xmlToSrt(req.response, lang);
     if(downloadVars) {
       downloadVars.zip.file(title, srt);
       --downloadVars.subCounter;
@@ -169,7 +172,7 @@ function downloadInfo(url, downloadVars) {
       if(downloadVars)
         ++downloadVars.subCounter;
       progressBar.incrementMax();
-      downloadSubs(subInfo.url, title + lang + '.srt', downloadVars);
+      downloadSubs(subInfo.url, title + lang + '.srt', downloadVars, lang);
     });
     if(downloadVars)
       --downloadVars.infoCounter;

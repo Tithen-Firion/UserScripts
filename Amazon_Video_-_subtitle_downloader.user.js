@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.7.1
+// @version     1.7.2
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/www\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/www\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -10,6 +10,9 @@
 // @include     /^https:\/\/www\.amazon\.co\.jp\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/www\.primevideo\.com\/(gp\/video|(region\/.*?\/)?detail)/.+/
 // @grant       unsafeWindow
+// @grant       GM.xmlHttpRequest
+// @grant       GM_xmlhttpRequest
+// @require     https://greasemonkey.github.io/gm4-polyfill/gm4-polyfill.js
 // @require     https://cdn.jsdelivr.net/gh/Tithen-Firion/UserScripts@7bd6406c0d264d60428cfea16248ecfb4753e5e3/libraries/xhrHijacker.js?version=1.0
 // @require     https://cdn.jsdelivr.net/gh/Stuk/jszip@579beb1d45c8d586d8be4411d5b2e48dea018c06/dist/jszip.min.js?version=3.1.5
 // @require     https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js@283f438c31776b622670be002caf1986c40ce90c/dist/FileSaver.min.js?version=2018-12-29
@@ -101,11 +104,13 @@ function xmlToSrt(xmlString, lang) {
 
 // download subs and save them
 function downloadSubs(url, title, downloadVars, lang) {
-  var req = new XMLHttpRequest();
-  req.open('get', url);
-  req.onload = function() {
+  GM.xmlHttpRequest({
+  	url: url,
+    method: 'get',
+    onload: function(resp) {
+
     progressBar.increment();
-    var srt = xmlToSrt(req.response, lang);
+    var srt = xmlToSrt(resp.responseText, lang);
     if(downloadVars) {
       downloadVars.zip.file(title, srt);
       --downloadVars.subCounter;
@@ -113,7 +118,7 @@ function downloadSubs(url, title, downloadVars, lang) {
         downloadVars.zip.generateAsync({type:"blob"})
           .then(function(content) {
             saveAs(content, 'subs.zip');
-      			progressBar.destroy();
+            progressBar.destroy();
           });
     }
     else {
@@ -121,8 +126,9 @@ function downloadSubs(url, title, downloadVars, lang) {
       saveAs(blob, title, true);
       progressBar.destroy();
     }
-  };
-  req.send(null);
+
+    }
+  });
 }
 
 // download episodes/movie info and start downloading subs

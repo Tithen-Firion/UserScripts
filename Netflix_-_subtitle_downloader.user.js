@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.1.0
+// @version     3.2.0
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -57,7 +57,9 @@ const WEBVTT = 'webvtt-lssdh-ios8';
 const DOWNLOAD_MENU = `<lh class="list-header">Netflix subtitle downloader</lh>
 <li class="list-header">Netflix subtitle downloader</li>
 <li class="track download">Download subs for this episode</li>
-<li class="track download-all">Download subs from this ep till last available</li>`;
+<li class="track download-all">Download subs from this ep till last available</li>
+<li class="track force-all-lang">Force Netflix to show all languages: <span></span></li>
+<li class="track lang-setting">Languages to download: <span></span></li>`;
 
 const SCRIPT_CSS = `.player-timed-text-tracks, .track-list-subtitles{ border-right:1px solid #000 }
 .player-timed-text-tracks+.player-timed-text-tracks, .track-list-subtitles+.track-list-subtitles{ border-right:0 }
@@ -73,6 +75,30 @@ const SUB_TYPES = {
 let zip;
 let subCache = {};
 let batch = false;
+
+let forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
+let langs = localStorage.getItem('NSD_lang-setting') || '';
+
+const setForceText = () => {
+	document.querySelector('.subtitle-downloader-menu > .force-all-lang > span').innerHTML = (forceSubs ? 'on' : 'off');
+};
+const setLangsText = () => {
+	document.querySelector('.subtitle-downloader-menu > .lang-setting > span').innerHTML = (langs === '' ? 'all' : langs);
+};
+
+const toggleForceLang = () => {
+	forceSubs = !forceSubs;
+  localStorage.setItem('NSD_force-all-lang', forceSubs);
+  document.location.reload();
+};
+const setLangToDownload = () => {
+  const result = prompt('Languages to download, comma separated. Leave empty to download all subtitles.\nExample: en,de,fr', langs);
+  if(result !== null) {
+    langs = result;
+    localStorage.setItem('NSD_lang-setting', langs);
+    setLangsText();
+  }
+};
 
 const popRandomElement = arr => {
   return arr.splice(arr.length * Math.random() << 0, 1)[0];
@@ -149,8 +175,22 @@ const _download = async _zip => {
   const showTitle = getTitle(false);
   const {titleP, subs} = subCache[getMovieID()];
   const downloaded = [];
-  const progress = new ProgressBar(Object.keys(subs).length);
-  for(const [lang, urls] of Object.entries(subs)) {
+
+  let filteredLangs;
+  if(langs === '')
+    filteredLangs = Object.keys(subs);
+  else {
+    const regularExpression = new RegExp('^(' + langs.replace(/\-/g, '\\-').replace(/\s/g, '').replace(/,/g, '|') + ')');
+    filteredLangs = [];
+    for(const lang of Object.keys(subs)) {
+    	if(lang.match(regularExpression))
+        filteredLangs.push(lang);
+    }
+  }
+
+  const progress = new ProgressBar(filteredLangs.length);
+  for(const lang of filteredLangs) {
+    const urls = subs[lang]
     while(urls.length > 0) {
       let url = popRandomElement(urls);
       const result = await fetch(url, {mode: "cors"});
@@ -200,6 +240,7 @@ const processMessage = e => {
 const injection = () => {
   const WEBVTT = 'webvtt-lssdh-ios8';
   const MANIFEST_URL = "/manifest";
+  const forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
 
   // hijack JSON.parse and JSON.stringify functions
   ((parse, stringify) => {
@@ -216,7 +257,7 @@ const injection = () => {
         	try {
             if (v.profiles)
               v.profiles.unshift(WEBVTT);
-            if (v.showAllSubDubTracks != null)
+            if (v.showAllSubDubTracks != null && forceSubs)
               v.showAllSubDubTracks = true;
           }
           catch (e) {
@@ -258,6 +299,10 @@ const observer = new MutationObserver(function(mutations) {
           trackMenu.appendChild(ol);
           ol.querySelector('.download').addEventListener('click', downloadThis);
           ol.querySelector('.download-all').addEventListener('click', downloadAll);
+          ol.querySelector('.force-all-lang').addEventListener('click', toggleForceLang);
+          ol.querySelector('.lang-setting').addEventListener('click', setLangToDownload);
+          setForceText();
+          setLangsText();
         }
       }
     });

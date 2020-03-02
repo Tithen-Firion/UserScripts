@@ -4,10 +4,10 @@
 // @license     MIT
 // @version     1.7.2
 // @namespace   tithen-firion.github.io
-// @include     /^https:\/\/www\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
-// @include     /^https:\/\/www\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
-// @include     /^https:\/\/www\.amazon\.co\.uk\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
-// @include     /^https:\/\/www\.amazon\.co\.jp\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
+// @include     /^https:\/\/(www|smile)\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
+// @include     /^https:\/\/(www|smile)\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
+// @include     /^https:\/\/(www|smile)\.amazon\.co\.uk\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
+// @include     /^https:\/\/(www|smile)\.amazon\.co\.jp\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/www\.primevideo\.com\/(gp\/video|(region\/.*?\/)?detail)/.+/
 // @grant       unsafeWindow
 // @grant       GM.xmlHttpRequest
@@ -18,7 +18,7 @@
 // @require     https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js@283f438c31776b622670be002caf1986c40ce90c/dist/FileSaver.min.js?version=2018-12-29
 // ==/UserScript==
 
-class ProgressBar { 
+class ProgressBar {
   constructor() {
     let container = document.querySelector('#userscript_progress_bars');
     if(container === null) {
@@ -39,7 +39,7 @@ class ProgressBar {
   init() {
     this.current = 0;
     this.max = 0;
-    
+
     this.progressElement = document.createElement('div');
     this.progressElement.style.width = 0;
     this.progressElement.style.height = '10px';
@@ -47,13 +47,13 @@ class ProgressBar {
 
     self.container.appendChild(this.progressElement);
   }
-  
+
   increment() {
     this.current += 1;
     if(this.current <= this.max)
       this.progressElement.style.width = this.current / this.max * 100 + '%';
   }
-  
+
   incrementMax() {
     this.max += 1;
     if(this.current <= this.max)
@@ -86,7 +86,7 @@ function xmlToSrt(xmlString, lang) {
   }
   var lines = xmlDoc.querySelectorAll('body p');
   var srtLines = [];
-  
+
   for(let i=0, l=lines.length; i < l; ++i) {
     let text = lines[i].innerHTML.trim();
     if(text != '') {

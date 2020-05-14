@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.7.3
+// @version     1.7.4
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/(www|smile)\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/(www|smile)\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -235,6 +235,21 @@ function createDownloadButton(id, type) {
   return p;
 }
 
+function findMovieID() {
+  for(const templateElement of document.querySelectorAll('script[type="text/template"]')) {
+    let data;
+    try {
+      data = JSON.parse(templateElement.innerHTML);
+    }
+    catch(ignore) {
+      continue;
+    }
+    if(typeof data.initArgs !== 'undefined' && typeof data.initArgs.titleID !== 'undefined')
+      return data.initArgs.titleID;
+  }
+  throw Error("Couldn't find movie ID");
+}
+
 // add download buttons
 function init(url) {
   initialied = true;
@@ -270,12 +285,17 @@ function init(url) {
     let id;
     let idElement = document.querySelector('[data-title-id]');
     if(idElement !== null)
-    	id = idElement.getAttribute('data-title-id');
+      id = idElement.getAttribute('data-title-id');
     else {
-      if(document.location.host.indexOf('primevideo') > -1)
-        id = document.querySelector('input[name="itemId"]').value;
-      else
-        id = unsafeWindow.ue_pti;
+      try {
+        id = findMovieID();
+      }
+      catch(ignore) {
+        if(document.location.host.indexOf('primevideo') > -1)
+          id = document.querySelector('input[name="itemId"]').value;
+        else
+          id = unsafeWindow.ue_pti;
+      }
     }
     id = id.split(',')[0];
     button = createDownloadButton(id, 'movie');

@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.7.5
+// @version     1.7.6
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/(www|smile)\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/(www|smile)\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -74,7 +74,7 @@ document.head.appendChild(s);
 
 // XML to SRT
 function xmlToSrt(xmlString, lang) {
-  xmlString = xmlString.replace(/<tt:br\/>/gi, '\n');
+  xmlString = xmlString.replace(/[ \t]*<tt:br\/>[ \t]*/gi, '\n');
   try {
     let parser = new DOMParser();
     var xmlDoc = parser.parseFromString(xmlString, 'text/xml');
@@ -180,13 +180,13 @@ function downloadInfo(url, downloadVars) {
       progressBar.incrementMax();
       downloadSubs(subInfo.url, title + lang + '.srt', downloadVars, lang);
     });
-    if(downloadVars)
-      --downloadVars.infoCounter;
     }
     catch(e) {
       console.log(info);
       alert(e);
     }
+    if(downloadVars)
+      --downloadVars.infoCounter;
   };
   req.send(null);
 }

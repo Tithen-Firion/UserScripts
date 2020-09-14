@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.7.6
+// @version     1.8.0
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/(www|smile)\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/(www|smile)\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -160,7 +160,13 @@ function downloadInfo(url, downloadVars) {
     title = title.replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.');
     title += '.WEBRip.Amazon.';
     var languages = new Set();
-    var subs = info.subtitleUrls || [];
+
+    var forced = info.forcedNarratives || [];
+    forced.forEach(function(forcedInfo) {
+      forcedInfo.languageCode += '-forced';
+    });
+
+    var subs = (info.subtitleUrls || []).concat(forced);
     if(subs.length > 1 && !downloadVars) {
       downloadVars = {
         subCounter: 0,
@@ -213,7 +219,7 @@ function downloadAll(e) {
 function parseURL(url) {
   var filter = ['consumptionType', 'deviceID', 'deviceTypeID', 'firmware', 'gascEnabled', 'marketplaceID', 'userWatchSessionId', 'videoMaterialType', 'clientId', 'operatingSystemName', 'operatingSystemVersion', 'customerID', 'token'];
   var urlParts = url.split('?');
-  var params = ['desiredResources=CatalogMetadata%2CSubtitleUrls'];
+  var params = ['desiredResources=CatalogMetadata%2CSubtitleUrls%2CForcedNarratives'];
   urlParts[1].split('&').forEach(function(param) {
     var p = param.split('=');
     if(filter.indexOf(p[0]) > -1)

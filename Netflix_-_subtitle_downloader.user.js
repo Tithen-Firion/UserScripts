@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.4.0
+// @version     3.4.1
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -95,6 +95,7 @@ const SUB_TYPES = {
   'closedcaptions': '[cc]'
 };
 
+let idOverrides = {};
 let zip;
 let subCache = {};
 let batch = false;
@@ -217,18 +218,25 @@ const processSubInfo = async result => {
   }
 };
 
-const getMovieID = () => {
+const getSubsFromCache = () => {
   const id = window.location.pathname.split('/').pop();
+  if(subCache.hasOwnProperty(id))
+    return subCache[id];
+
   let newID = undefined;
   try {
     newID = unsafeWindow.netflix.falcorCache.videos[id].current.value[1];
   }
   catch(ignore) {}
+  if(typeof newID !== 'undefined' && subCache.hasOwnProperty(newID))
+    return subCache[newID];
 
-  if(typeof newID === 'undefined')
-    return id;
-  else
-    return newID;
+  newID = idOverrides[id];
+  if(typeof newID !== 'undefined' && subCache.hasOwnProperty(newID))
+    return subCache[newID];
+
+  alert("Couldn't find subs, try refreshing the page.");
+  throw '';
 };
 
 const pickFormat = formats => {
@@ -250,7 +258,7 @@ const _save = async (_zip, title) => {
 
 const _download = async _zip => {
   const showTitle = getTitle(false);
-  const {titleP, subs} = subCache[getMovieID()];
+  const {titleP, subs} = getSubsFromCache();
   const downloaded = [];
 
   let filteredLangs;
@@ -322,7 +330,11 @@ const downloadAll = async () => {
 };
 
 const processMessage = e => {
-  processSubInfo(e.detail);
+  const override = e.detail.id_override;
+  if(typeof override !== 'undefined')
+    idOverrides[override[0]] = override[1];
+  else
+    processSubInfo(e.detail);
 }
 
 const injection = () => {
@@ -355,6 +367,14 @@ const injection = () => {
               throw e;
           }
         }
+      }
+      if(data && typeof data.movieId === 'number') {
+        try {
+          let videoId = data.params.sessionParams.uiplaycontext.video_id;
+          if(typeof videoId === 'number' && videoId !== data.movieId)
+            window.dispatchEvent(new CustomEvent('netflix_sub_downloader_data', {detail: {id_override: [videoId, data.movieId]}}));
+        }
+        catch(ignore) {}
       }
       return stringify(data);
     };

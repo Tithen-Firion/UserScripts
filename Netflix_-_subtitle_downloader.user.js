@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.2.3
+// @version     3.3.0
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -30,17 +30,26 @@ class ProgressBar {
     }
 
     this.progressElement = document.createElement('div');
-    this.progressElement.style.width = 0;
-    this.progressElement.style.height = '10px';
-    this.progressElement.style.background = 'green';
+    this.progressElement.innerHTML = 'Click to stop';
+    this.progressElement.style.cursor = 'pointer';
+    this.progressElement.style.fontSize = '16px';
+    this.progressElement.style.textAlign = 'center';
+    this.progressElement.style.width = '100%';
+    this.progressElement.style.height = '20px';
+    this.progressElement.style.background = 'transparent';
+    this.stop = new Promise(resolve => {
+    	this.progressElement.addEventListener('click', () => {resolve(STOP_THE_DOWNLOAD)});
+    });
 
     container.appendChild(this.progressElement);
   }
   
   increment() {
     this.current += 1;
-    if(this.current <= this.max)
-      this.progressElement.style.width = this.current / this.max * 100 + '%';
+    if(this.current <= this.max) {
+      let p = this.current / this.max * 100;
+    	this.progressElement.style.background = `linear-gradient(to right, green ${p}%, transparent ${p}%)`;
+    }
   }
 
   destroy() {
@@ -48,6 +57,7 @@ class ProgressBar {
   }
 }
 
+const STOP_THE_DOWNLOAD = 'NETFLIX_SUBTITLE_DOWNLOADER_STOP_THE_DOWNLOAD';
 const MAIN_TITLE = '.player-status-main-title, .ellipsize-text>h4, .video-title>h4';
 const TRACK_MENU = '#player-menu-track-settings, .audio-subtitle-controller';
 const NEXT_EPISODE = '.player-next-episode:not(.player-hidden), .button-nfplayerNextEpisode';
@@ -105,6 +115,10 @@ const setLangToDownload = () => {
     setLangsText();
   }
 };
+
+const asyncSleep = (seconds, value) => new Promise(resolve => {
+	window.setTimeout(resolve, seconds * 1000, value);
+});
 
 const popRandomElement = arr => {
   return arr.splice(arr.length * Math.random() << 0, 1)[0];
@@ -207,11 +221,17 @@ const _download = async _zip => {
   }
 
   const progress = new ProgressBar(filteredLangs.length);
+  let stop = false;
   for(const lang of filteredLangs) {
     const urls = subs[lang]
     while(urls.length > 0) {
       let url = popRandomElement(urls);
-      const result = await fetch(url, {mode: "cors"});
+      const resultPromise = fetch(url, {mode: "cors"});
+      const result = await Promise.any([resultPromise, progress.stop, asyncSleep(30, STOP_THE_DOWNLOAD)]);
+      if(result === STOP_THE_DOWNLOAD) {
+      	stop = true;
+        break;
+      }
       progress.increment();
       const data = await result.text();
       if(data.length > 0) {
@@ -219,8 +239,9 @@ const _download = async _zip => {
         break;
       }
     }
+    if(stop)
+      break;
   }
-  progress.destroy();
   const title = await titleP;
 
   downloaded.forEach(x => {
@@ -228,7 +249,11 @@ const _download = async _zip => {
     _zip.file(`${title}.${lang}.vtt`, data);
   });
 
-  return await showTitle;
+  if(await Promise.any([progress.stop, {}]) === STOP_THE_DOWNLOAD)
+    stop = true;
+  progress.destroy();
+
+  return [await showTitle, stop];
 };
 
 const downloadThis = async () => {
@@ -240,9 +265,9 @@ const downloadThis = async () => {
 const downloadAll = async () => {
   zip = zip || new JSZip();
   batch = true;
-  const showTitle = await _download(zip);
+  const [showTitle, stop] = await _download(zip);
   const nextEp = document.querySelector(NEXT_EPISODE);
-  if(nextEp)
+  if(!stop && nextEp)
     nextEp.click();
   else {
     await _save(zip, showTitle);

@@ -38,17 +38,17 @@ class ProgressBar {
     this.progressElement.style.height = '20px';
     this.progressElement.style.background = 'transparent';
     this.stop = new Promise(resolve => {
-    	this.progressElement.addEventListener('click', () => {resolve(STOP_THE_DOWNLOAD)});
+      this.progressElement.addEventListener('click', () => {resolve(STOP_THE_DOWNLOAD)});
     });
 
     container.appendChild(this.progressElement);
   }
-  
+
   increment() {
     this.current += 1;
     if(this.current <= this.max) {
       let p = this.current / this.max * 100;
-    	this.progressElement.style.background = `linear-gradient(to right, green ${p}%, transparent ${p}%)`;
+      this.progressElement.style.background = `linear-gradient(to right, green ${p}%, transparent ${p}%)`;
     }
   }
 
@@ -90,14 +90,14 @@ let forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
 let langs = localStorage.getItem('NSD_lang-setting') || '';
 
 const setForceText = () => {
-	document.querySelector('.subtitle-downloader-menu > .force-all-lang > span').innerHTML = (forceSubs ? 'on' : 'off');
+  document.querySelector('.subtitle-downloader-menu > .force-all-lang > span').innerHTML = (forceSubs ? 'on' : 'off');
 };
 const setLangsText = () => {
-	document.querySelector('.subtitle-downloader-menu > .lang-setting > span').innerHTML = (langs === '' ? 'all' : langs);
+  document.querySelector('.subtitle-downloader-menu > .lang-setting > span').innerHTML = (langs === '' ? 'all' : langs);
 };
 
 const toggleForceLang = () => {
-	forceSubs = !forceSubs;
+  forceSubs = !forceSubs;
   if(forceSubs)
     localStorage.removeItem('NSD_force-all-lang');
   else
@@ -117,7 +117,7 @@ const setLangToDownload = () => {
 };
 
 const asyncSleep = (seconds, value) => new Promise(resolve => {
-	window.setTimeout(resolve, seconds * 1000, value);
+  window.setTimeout(resolve, seconds * 1000, value);
 });
 
 const popRandomElement = arr => {
@@ -215,7 +215,7 @@ const _download = async _zip => {
     const regularExpression = new RegExp('^(' + langs.replace(/\-/g, '\\-').replace(/\s/g, '').replace(/,/g, '|') + ')');
     filteredLangs = [];
     for(const lang of Object.keys(subs)) {
-    	if(lang.match(regularExpression))
+      if(lang.match(regularExpression))
         filteredLangs.push(lang);
     }
   }
@@ -229,7 +229,7 @@ const _download = async _zip => {
       const resultPromise = fetch(url, {mode: "cors"});
       const result = await Promise.any([resultPromise, progress.stop, asyncSleep(30, STOP_THE_DOWNLOAD)]);
       if(result === STOP_THE_DOWNLOAD) {
-      	stop = true;
+        stop = true;
         break;
       }
       progress.increment();
@@ -297,7 +297,7 @@ const injection = () => {
     JSON.stringify = function (data) {
       if (data && typeof data.url === 'string' && data.url.indexOf(MANIFEST_URL) > -1) {
         for (let v of Object.values(data)) {
-        	try {
+          try {
             if (v.profiles)
               v.profiles.unshift(WEBVTT);
             if (v.showAllSubDubTracks != null && forceSubs)

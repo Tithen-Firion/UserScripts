@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.3.1
+// @version     3.4.0
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -63,13 +63,26 @@ const TRACK_MENU = '#player-menu-track-settings, .audio-subtitle-controller';
 const NEXT_EPISODE = '.player-next-episode:not(.player-hidden), .button-nfplayerNextEpisode';
 
 const WEBVTT = 'webvtt-lssdh-ios8';
+const DFXP = 'dfxp-ls-sdh';
+const SIMPLE = 'simplesdh';
+const ALL_FORMATS = [WEBVTT, DFXP, SIMPLE];
+
+const FORMAT_NAMES = {};
+FORMAT_NAMES[WEBVTT] = 'WebVTT';
+FORMAT_NAMES[DFXP] = 'DFXP/XML';
+
+const EXTENSIONS = {};
+EXTENSIONS[WEBVTT] = 'vtt';
+EXTENSIONS[DFXP] = 'dfxp';
+EXTENSIONS[SIMPLE] = 'xml';
 
 const DOWNLOAD_MENU = `<lh class="list-header">Netflix subtitle downloader</lh>
 <li class="list-header">Netflix subtitle downloader</li>
 <li class="track download">Download subs for this episode</li>
 <li class="track download-all">Download subs from this ep till last available</li>
 <li class="track force-all-lang">Force Netflix to show all languages: <span></span></li>
-<li class="track lang-setting">Languages to download: <span></span></li>`;
+<li class="track lang-setting">Languages to download: <span></span></li>
+<li class="track sub-format">Subtitle format: prefer <span></span></li>`;
 
 const SCRIPT_CSS = `.player-timed-text-tracks, .track-list-subtitles{ border-right:1px solid #000 }
 .player-timed-text-tracks+.player-timed-text-tracks, .track-list-subtitles+.track-list-subtitles{ border-right:0 }
@@ -88,12 +101,16 @@ let batch = false;
 
 let forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
 let langs = localStorage.getItem('NSD_lang-setting') || '';
+let subFormat = localStorage.getItem('NSD_sub-format') || WEBVTT;
 
 const setForceText = () => {
   document.querySelector('.subtitle-downloader-menu > .force-all-lang > span').innerHTML = (forceSubs ? 'on' : 'off');
 };
 const setLangsText = () => {
   document.querySelector('.subtitle-downloader-menu > .lang-setting > span').innerHTML = (langs === '' ? 'all' : langs);
+};
+const setFormatText = () => {
+  document.querySelector('.subtitle-downloader-menu > .sub-format > span').innerHTML = FORMAT_NAMES[subFormat];
 };
 
 const toggleForceLang = () => {
@@ -114,6 +131,17 @@ const setLangToDownload = () => {
       localStorage.setItem('NSD_lang-setting', langs);
     setLangsText();
   }
+};
+const setSubFormat = () => {
+  if(subFormat === WEBVTT) {
+    localStorage.setItem('NSD_sub-format', DFXP);
+    subFormat = DFXP;
+  }
+  else {
+    localStorage.removeItem('NSD_sub-format');
+    subFormat = WEBVTT;
+  }
+  setFormatText();
 };
 
 const asyncSleep = (seconds, value) => new Promise(resolve => {
@@ -167,14 +195,20 @@ const processSubInfo = async result => {
   for(const track of tracks) {
     if(track.isNoneTrack)
       continue;
-    if(typeof track.ttDownloadables[WEBVTT] === 'undefined')
-      continue;
 
     let type = SUB_TYPES[track.rawTrackType];
     if(typeof type === 'undefined')
       type = `[${track.rawTrackType}]`;
     const lang = track.language + type + (track.isForcedNarrative ? '-forced' : '');
-    subs[lang] = Object.values(track.ttDownloadables[WEBVTT].downloadUrls);
+
+    const formats = {};
+    for(let format of ALL_FORMATS) {
+      if(typeof track.ttDownloadables[format] !== 'undefined')
+        formats[format] = [Object.values(track.ttDownloadables[format].downloadUrls), EXTENSIONS[format]];
+    }
+
+    if(Object.keys(formats).length > 0)
+      subs[lang] = formats;
   }
   subCache[result.movieId] = {titleP, subs};
 
@@ -195,6 +229,17 @@ const getMovieID = () => {
     return id;
   else
     return newID;
+};
+
+const pickFormat = formats => {
+  const preferred = ALL_FORMATS.slice();
+  if(subFormat === DFXP)
+    preferred.push(preferred.shift());
+
+  for(let format of preferred) {
+    if(typeof formats[format] !== 'undefined')
+      return formats[format];
+  }
 };
 
 
@@ -223,7 +268,7 @@ const _download = async _zip => {
   const progress = new ProgressBar(filteredLangs.length);
   let stop = false;
   for(const lang of filteredLangs) {
-    const urls = subs[lang]
+    const [urls, extension] = pickFormat(subs[lang]);
     while(urls.length > 0) {
       let url = popRandomElement(urls);
       const resultPromise = fetch(url, {mode: "cors"});
@@ -235,7 +280,7 @@ const _download = async _zip => {
       progress.increment();
       const data = await result.text();
       if(data.length > 0) {
-        downloaded.push({lang, data});
+        downloaded.push({lang, data, extension});
         break;
       }
     }
@@ -245,8 +290,8 @@ const _download = async _zip => {
   const title = await titleP;
 
   downloaded.forEach(x => {
-    const {lang, data} = x;
-    _zip.file(`${title}.${lang}.vtt`, data);
+    const {lang, data, extension} = x;
+    _zip.file(`${title}.${lang}.${extension}`, data);
   });
 
   if(await Promise.any([progress.stop, {}]) === STOP_THE_DOWNLOAD)
@@ -344,8 +389,10 @@ const observer = new MutationObserver(function(mutations) {
           ol.querySelector('.download-all').addEventListener('click', downloadAll);
           ol.querySelector('.force-all-lang').addEventListener('click', toggleForceLang);
           ol.querySelector('.lang-setting').addEventListener('click', setLangToDownload);
+          ol.querySelector('.sub-format').addEventListener('click', setSubFormat);
           setForceText();
           setLangsText();
+          setFormatText();
         }
       }
     });

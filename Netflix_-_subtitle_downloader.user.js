@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.4.1
+// @version     3.4.2
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -280,7 +280,16 @@ const _download = async _zip => {
     while(urls.length > 0) {
       let url = popRandomElement(urls);
       const resultPromise = fetch(url, {mode: "cors"});
-      const result = await Promise.any([resultPromise, progress.stop, asyncSleep(30, STOP_THE_DOWNLOAD)]);
+      let result;
+      try {
+        // Promise.any isn't supported in all browsers, use Promise.race instead
+        result = await Promise.race([resultPromise, progress.stop, asyncSleep(30, STOP_THE_DOWNLOAD)]);
+      }
+      catch(e) {
+        // the only promise that can be rejected is the one from fetch
+        // if that happens we want to stop the download anyway
+        result = STOP_THE_DOWNLOAD;
+      }
       if(result === STOP_THE_DOWNLOAD) {
         stop = true;
         break;
@@ -302,7 +311,7 @@ const _download = async _zip => {
     _zip.file(`${title}.${lang}.${extension}`, data);
   });
 
-  if(await Promise.any([progress.stop, {}]) === STOP_THE_DOWNLOAD)
+  if(await Promise.race([progress.stop, {}]) === STOP_THE_DOWNLOAD)
     stop = true;
   progress.destroy();
 

@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.8.0
+// @version     1.8.1
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/(www|smile)\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/(www|smile)\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -287,22 +287,7 @@ function init(url) {
     button = createDownloadButton(IDs.join(';'), 'season');
   }
   else {
-    let pathNames = window.location.pathname.split('/');
-    let id;
-    let idElement = document.querySelector('[data-title-id]');
-    if(idElement !== null)
-      id = idElement.getAttribute('data-title-id');
-    else {
-      try {
-        id = findMovieID();
-      }
-      catch(ignore) {
-        if(document.location.host.indexOf('primevideo') > -1)
-          id = document.querySelector('input[name="itemId"]').value;
-        else
-          id = unsafeWindow.ue_pti;
-      }
-    }
+    let id = findMovieID();
     id = id.split(',')[0];
     button = createDownloadButton(id, 'movie');
   }
@@ -313,6 +298,13 @@ var initialied = false, gUrl;
 // hijack xhr, we need to find out tokens and other parameters needed for subtitle info
 xhrHijacker(function(xhr, id, origin, args) {
   if(!initialied && origin === 'open')
-    if(args[1].indexOf('/GetPlaybackResources') > -1)
-      init(args[1])
+    if(args[1].indexOf('/GetPlaybackResources') > -1) {
+      try {
+        init(args[1]);
+      }
+      catch(error) {
+        console.log(error);
+        alert(`subtitle downloader error: ${error.message}`);
+      }
+    }
 });

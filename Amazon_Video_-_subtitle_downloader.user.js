@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.8.1
+// @version     1.8.2
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/(www|smile)\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/(www|smile)\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -256,11 +256,32 @@ function findMovieID() {
   throw Error("Couldn't find movie ID");
 }
 
+function allLoaded(resolve, epCount) {
+	if(epCount !== document.querySelectorAll('.js-node-episode-container').length)
+    resolve();
+  else
+    window.setTimeout(showAllGone, 200, resolve, epCount);
+}
+
+function showAll() {
+  return new Promise(resolve => {
+    let btn = document.querySelector('[data-automation-id="ep-expander"]');
+    if(btn === null)
+      resolve();
+
+    let epCount = document.querySelectorAll('.js-node-episode-container').length;
+    btn.click();
+    allLoaded(resolve, epCount);
+  });
+}
+
 // add download buttons
-function init(url) {
+async function init(url) {
   initialied = true;
   gUrl = parseURL(url);
   console.log(gUrl);
+
+  await showAll();
 
   let button;
   let epElems = document.querySelectorAll('.dv-episode-container, .avu-context-card, .js-node-episode-container');
@@ -299,12 +320,10 @@ var initialied = false, gUrl;
 xhrHijacker(function(xhr, id, origin, args) {
   if(!initialied && origin === 'open')
     if(args[1].indexOf('/GetPlaybackResources') > -1) {
-      try {
-        init(args[1]);
-      }
-      catch(error) {
-        console.log(error);
-        alert(`subtitle downloader error: ${error.message}`);
-      }
+      init(args[1])
+        .catch(error => {
+          console.log(error);
+          alert(`subtitle downloader error: ${error.message}`);
+        });
     }
 });

@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.4.2
+// @version     3.4.3
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -265,7 +265,15 @@ const _download = async _zip => {
   if(langs === '')
     filteredLangs = Object.keys(subs);
   else {
-    const regularExpression = new RegExp('^(' + langs.replace(/\-/g, '\\-').replace(/\s/g, '').replace(/,/g, '|') + ')');
+    const regularExpression = new RegExp(
+      '^(' + langs
+        .replace(/\[/g, '\\[')
+        .replace(/\]/g, '\\]')
+        .replace(/\-/g, '\\-')
+        .replace(/\s/g, '')
+        .replace(/,/g, '|')
+      + ')'
+    );
     filteredLangs = [];
     for(const lang of Object.keys(subs)) {
       if(lang.match(regularExpression))

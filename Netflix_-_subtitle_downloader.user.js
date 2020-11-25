@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.4.3
+// @version     3.4.4
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -165,7 +165,7 @@ const __getTitle = full => {
     const episodeElement = titleElement.nextElementSibling;
     if(episodeElement) {
       const m = episodeElement.textContent.match(/^[^\d]*(\d+)[^\d]+(\d+)[^\d]*$/);
-      if(m && m.length == 3) {
+      if(episodeElement.nextElementSibling && m && m.length == 3) {
         title.push(`S${m[1].padStart(2, '0')}E${m[2].padStart(2, '0')}`);
       }
       else {

@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.4.4
+// @version     3.4.5
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -356,7 +356,7 @@ const processMessage = e => {
 
 const injection = () => {
   const WEBVTT = 'webvtt-lssdh-ios8';
-  const MANIFEST_URL = "manifest";
+  const MANIFEST_PATTERN = new RegExp('manifest|licensedManifest');
   const forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
 
   // hijack JSON.parse and JSON.stringify functions
@@ -369,7 +369,12 @@ const injection = () => {
       return data;
     };
     JSON.stringify = function (data) {
-      if (data && typeof data.url === 'string' && data.url.indexOf(MANIFEST_URL) > -1) {
+      /*{
+        let text = stringify(data);
+        if (text.includes('dfxp-ls-sdh'))
+          console.log(text, data);
+      }*/
+      if (data && typeof data.url === 'string' && data.url.search(MANIFEST_PATTERN) > -1) {
         for (let v of Object.values(data)) {
           try {
             if (v.profiles)

@@ -2,7 +2,7 @@
 // @name        iTunes - subtitle downloader
 // @description Allows you to download subtitles from iTunes
 // @license     MIT
-// @version     1.2.0
+// @version     1.2.1
 // @namespace   tithen-firion.github.io
 // @include     https://itunes.apple.com/*/movie/*
 // @include     https://tv.apple.com/*/movie/*
@@ -242,7 +242,12 @@ async function parseData(text) {
 }
 
 (async () => {
-  const element = document.querySelector('#shoebox-ember-data-store, #shoebox-uts-api');
+  let element = document.querySelector('#shoebox-ember-data-store, #shoebox-uts-api');
+  if(element === null) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(await getText(window.location.href), 'text/html');
+    element = doc.querySelector('#shoebox-ember-data-store, #shoebox-uts-api');
+  }
   if(element !== null) {
     try {
       await parseData(element.textContent);
@@ -251,5 +256,8 @@ async function parseData(text) {
       console.error(error);
       alert('Uncaught error!\nLine: ' + error.lineNumber + '\n' + error);
     }
+  }
+  else {
+  	alert('Movie info not found!')
   }
 })();

@@ -2,7 +2,7 @@
 // @name        iTunes - subtitle downloader
 // @description Allows you to download subtitles from iTunes
 // @license     MIT
-// @version     1.1.0
+// @version     1.2.0
 // @namespace   tithen-firion.github.io
 // @include     https://itunes.apple.com/*/movie/*
 // @include     https://tv.apple.com/*/movie/*
@@ -11,6 +11,19 @@
 // @require     https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js@283f438c31776b622670be002caf1986c40ce90c/dist/FileSaver.min.js?version=2018-12-29
 // @require     https://cdn.jsdelivr.net/npm/m3u8-parser@4.6.0/dist/m3u8-parser.min.js
 // ==/UserScript==
+
+let langs = localStorage.getItem('ISD_lang-setting') || '';
+
+function setLangToDownload() {
+  const result = prompt('Languages to download, comma separated. Leave empty to download all subtitles.\nExample: en,de,fr', langs);
+  if(result !== null) {
+    langs = result;
+    if(langs === '')
+      localStorage.removeItem('ISD_lang-setting');
+    else
+      localStorage.setItem('ISD_lang-setting', langs);
+  }
+}
 
 // taken from: https://github.com/rxaviers/async-pool/blob/1e7f18aca0bd724fe15d992d98122e1bb83b41a4/lib/es7.js
 async function asyncPool(poolLimit, array, iteratorFn) {
@@ -92,11 +105,34 @@ async function getSubtitleSegment(url, done) {
   return text;
 }
 
+function filterLangs(subInfo) {
+  if(langs === '')
+    return subInfo;
+  else {
+    const regularExpression = new RegExp(
+      '^(' + langs
+        .replace(/\[/g, '\\[')
+        .replace(/\]/g, '\\]')
+        .replace(/\-/g, '\\-')
+        .replace(/\s/g, '')
+        .replace(/,/g, '|')
+      + ')'
+    );
+    const filteredLangs = [];
+    for(const entry of subInfo) {
+      if(entry.language.match(regularExpression))
+        filteredLangs.push(entry);
+    }
+    return filteredLangs;
+  }
+}
+
 async function _download(name, url) {
   name = name.replace(/[:*?"<>|\\\/]+/g, '_');
 
   const mainProgressBar = new ProgressBar(1);
-  const subInfo = Object.values((await getM3U8(url)).mediaGroups.SUBTITLES.subtitles_ak);
+  let subInfo = Object.values((await getM3U8(url)).mediaGroups.SUBTITLES.subtitles_ak);
+  subInfo = filterLangs(subInfo);
   mainProgressBar.max = subInfo.length;
 
   const zip = new JSZip();
@@ -175,21 +211,34 @@ const parsers = {
 async function parseData(text) {
   const data = JSON.parse(text);
   const [name, m3u8Url] = parsers[document.location.hostname](data);
+
+  const container = document.createElement('div');
+  container.style.position = 'absolute';
+  container.style.zIndex = '99999998';
+  container.style.top = '45px';
+  container.style.left = '5px';
+  container.style.textAlign = 'center';
+
   const button = document.createElement('a');
   button.classList.add('we-button');
   button.classList.add('we-button--compact');
   button.classList.add('commerce-button');
-  button.style.position = 'absolute';
-  button.style.zIndex = '99999998';
-  button.style.top = '45px';
-  button.style.left = '5px';
   button.style.padding = '3px 8px';
+  button.style.display = 'block';
+  button.style.marginBottom = '10px';
   button.href = '#';
+
+  const langButton = button.cloneNode();
+  langButton.innerHTML = 'Languages';
+  langButton.addEventListener('click', setLangToDownload);
+  container.append(langButton);
+
   button.innerHTML = 'Download subtitles';
   button.addEventListener('click', e => {
     download(name, m3u8Url);
   });
-  document.body.append(button);
+  container.append(button);
+  document.body.prepend(container);
 }
 
 (async () => {

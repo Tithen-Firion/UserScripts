@@ -2,10 +2,11 @@
 // @name        iTunes - subtitle downloader
 // @description Allows you to download subtitles from iTunes
 // @license     MIT
-// @version     1.2.1
+// @version     1.3.0
 // @namespace   tithen-firion.github.io
 // @include     https://itunes.apple.com/*/movie/*
 // @include     https://tv.apple.com/*/movie/*
+// @include     https://tv.apple.com/*/episode/*
 // @grant       none
 // @require     https://cdn.jsdelivr.net/gh/Stuk/jszip@579beb1d45c8d586d8be4411d5b2e48dea018c06/dist/jszip.min.js?version=3.1.5
 // @require     https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js@283f438c31776b622670be002caf1986c40ce90c/dist/FileSaver.min.js?version=2018-12-29
@@ -139,14 +140,15 @@ async function _download(name, url) {
 
   for(const entry of subInfo) {
   	const lang = entry.language + (entry.forced ? '[forced]' : '');
-    const segments = (await getM3U8(entry.uri)).segments;
+    const langURL = new URL(entry.uri, url).href;
+    const segments = (await getM3U8(langURL)).segments;
 
     const subProgressBar = new ProgressBar(segments.length);
     const partial = segmentUrl => getSubtitleSegment(segmentUrl, subProgressBar.increment.bind(subProgressBar));
 
     const segmentURLs = [];
     for(const segment of segments) {
-      segmentURLs.push(new URL(segment.uri, entry.uri).href);
+      segmentURLs.push(new URL(segment.uri, langURL).href);
     }
 
     const subtitleSegments = await asyncPool(20, segmentURLs, partial);
@@ -187,13 +189,26 @@ function findUrl(included) {
 
 const parsers = {
 	'tv.apple.com': data => {
-    for(const value of Object.values(data)){
+    for(const value of Object.values(data)) {
       try{
-        const data2 = JSON.parse(value).d.data.content.playables[0];
-        return [
-          data2.title,
-          data2.itunesMediaApiData.offers[0].hlsUrl
-        ];
+        const data2 = JSON.parse(value).d.data;
+        const content = data2.content;
+        if(content.type === 'Movie') {
+        	const playable = content.playables[0];
+          return [
+            playable.title,
+            playable.itunesMediaApiData.offers[0].hlsUrl
+          ];
+        }
+        else if(content.type === 'Episode') {
+          const season = content.seasonNumber.toString().padStart(2, '0');
+          const episode = content.episodeNumber.toString().padStart(2, '0');
+          return [
+          	`${content.showTitle} S${season}E${episode}`,
+            Object.values(data2.playables)[0].assets.hlsUrl
+          ];
+        }
+        
       }
       catch(ignore){}
     }

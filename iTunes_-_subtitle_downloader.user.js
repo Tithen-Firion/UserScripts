@@ -2,7 +2,7 @@
 // @name        iTunes - subtitle downloader
 // @description Allows you to download subtitles from iTunes
 // @license     MIT
-// @version     1.3.1
+// @version     1.3.2
 // @namespace   tithen-firion.github.io
 // @include     https://itunes.apple.com/*/movie/*
 // @include     https://tv.apple.com/*/movie/*
@@ -132,7 +132,14 @@ async function _download(name, url) {
   name = name.replace(/[:*?"<>|\\\/]+/g, '_');
 
   const mainProgressBar = new ProgressBar(1);
-  let subInfo = Object.values((await getM3U8(url)).mediaGroups.SUBTITLES.subtitles_ak);
+  const SUBTITLES = (await getM3U8(url)).mediaGroups.SUBTITLES;
+  const subGroup = SUBTITLES.subtitles_ak || SUBTITLES.subtitles_ap || SUBTITLES.subtitles_ap3;
+  if(typeof subGroup === 'undefined') {
+  	alert('No subtitles found!');
+    mainProgressBar.destroy();
+    return;
+  }
+  let subInfo = Object.values(subGroup);
   subInfo = filterLangs(subInfo);
   mainProgressBar.max = subInfo.length;
 
@@ -218,8 +225,12 @@ const parsers = {
   },
 	'itunes.apple.com': data => {
     data = Object.values(data)[0];
+    let name = data.data.attributes.name;
+    const year = (data.data.attributes.releaseDate || '').substr(0, 4);
+    name = name.replace(new RegExp('\\s*\\(' + year + '\\)\\s*$'), '');
+    name += ` (${year})`;
   	return [
-      data.data.attributes.name,
+      name,
       findUrl(data.included)
     ];
   }

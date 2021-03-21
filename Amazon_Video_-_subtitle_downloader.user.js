@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.8.4
+// @version     1.8.5
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/(www|smile)\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/(www|smile)\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -74,7 +74,7 @@ document.head.appendChild(s);
 
 // XML to SRT
 function xmlToSrt(xmlString, lang) {
-  xmlString = xmlString.replace(/[ \t]*<tt:br\/>[ \t]*/gi, '\n');
+  xmlString = xmlString.replace(/[ \t]*<(?:tt:)?br\s*\/>[ \t]*/gi, '\n');
   try {
     let parser = new DOMParser();
     var xmlDoc = parser.parseFromString(xmlString, 'text/xml');
@@ -87,11 +87,15 @@ function xmlToSrt(xmlString, lang) {
   var lines = xmlDoc.querySelectorAll('body p');
   var srtLines = [];
 
+  const textarea = document.createElement('textarea');
   for(let i=0, l=lines.length; i < l; ++i) {
-    let text = lines[i].value.trim();
+    let text = lines[i].innerHTML.trim();
     if(text != '') {
       if(lang.indexOf('ar') == 0)
         text = text.replace(/^(?!\u202B|\u200F)/gm, '\u202B');
+
+      textarea.innerHTML = text;
+      text = textarea.value;
 
       srtLines.push(i+1);
       srtLines.push(lines[i].getAttribute('begin').replace('.',',') + ' --> ' + lines[i].getAttribute('end').replace('.',','));

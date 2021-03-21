@@ -91,7 +91,7 @@ function xmlToSrt(xmlString, lang) {
     let text = lines[i].innerHTML.trim();
     if(text != '') {
       if(lang.indexOf('ar') == 0)
-      	text = text.replace(/^(?!\u202B|\u200F)/gm, '\u202B');
+        text = text.replace(/^(?!\u202B|\u200F)/gm, '\u202B');
 
       srtLines.push(i+1);
       srtLines.push(lines[i].getAttribute('begin').replace('.',',') + ' --> ' + lines[i].getAttribute('end').replace('.',','));
@@ -105,7 +105,7 @@ function xmlToSrt(xmlString, lang) {
 // download subs and save them
 function downloadSubs(url, title, downloadVars, lang) {
   GM.xmlHttpRequest({
-  	url: url,
+    url: url,
     method: 'get',
     onload: function(resp) {
 
@@ -257,7 +257,7 @@ function findMovieID() {
 }
 
 function allLoaded(resolve, epCount) {
-	if(epCount !== document.querySelectorAll('.js-node-episode-container').length)
+  if(epCount !== document.querySelectorAll('.js-node-episode-container').length)
     resolve();
   else
     window.setTimeout(allLoaded, 200, resolve, epCount);

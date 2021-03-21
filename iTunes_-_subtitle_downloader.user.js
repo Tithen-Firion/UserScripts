@@ -85,7 +85,7 @@ class ProgressBar {
 }
 
 async function getText(url) {
-	const response = await fetch(url);
+  const response = await fetch(url);
   if(!response.ok) {
     console.log(response);
     throw new Error('Something went wrong, server returned status code ' + response.status);
@@ -94,14 +94,14 @@ async function getText(url) {
 }
 
 async function getM3U8(url) {
-	const parser = new m3u8Parser.Parser();
+  const parser = new m3u8Parser.Parser();
   parser.push(await getText(url));
   parser.end();
   return parser.manifest;
 }
 
 async function getSubtitleSegment(url, done) {
-	const text = await getText(url);
+  const text = await getText(url);
   done();
   return text;
 }
@@ -135,7 +135,7 @@ async function _download(name, url) {
   const SUBTITLES = (await getM3U8(url)).mediaGroups.SUBTITLES;
   const subGroup = SUBTITLES.subtitles_ak || SUBTITLES.subtitles_ap || SUBTITLES.subtitles_ap3;
   if(typeof subGroup === 'undefined') {
-  	alert('No subtitles found!');
+    alert('No subtitles found!');
     mainProgressBar.destroy();
     return;
   }
@@ -146,7 +146,7 @@ async function _download(name, url) {
   const zip = new JSZip();
 
   for(const entry of subInfo) {
-  	let lang = entry.language;
+    let lang = entry.language;
     if(entry.forced) lang += '[forced]';
     if(typeof entry.characteristics !== 'undefined') lang += '[cc]';
     const langURL = new URL(entry.uri, url).href;
@@ -187,7 +187,7 @@ async function download(name, url) {
 }
 
 function findUrl(included) {
-	for(const item of included) {
+  for(const item of included) {
     try {
       return item.attributes.assets[0].hlsUrl;
     }
@@ -197,13 +197,13 @@ function findUrl(included) {
 }
 
 const parsers = {
-	'tv.apple.com': data => {
+  'tv.apple.com': data => {
     for(const value of Object.values(data)) {
       try{
         const data2 = JSON.parse(value).d.data;
         const content = data2.content;
         if(content.type === 'Movie') {
-        	const playable = content.playables[0];
+          const playable = content.playables[0];
           return [
             playable.title,
             playable.itunesMediaApiData.offers[0].hlsUrl
@@ -213,7 +213,7 @@ const parsers = {
           const season = content.seasonNumber.toString().padStart(2, '0');
           const episode = content.episodeNumber.toString().padStart(2, '0');
           return [
-          	`${content.showTitle} S${season}E${episode}`,
+            `${content.showTitle} S${season}E${episode}`,
             Object.values(data2.playables)[0].assets.hlsUrl
           ];
         }
@@ -223,13 +223,13 @@ const parsers = {
     }
     throw new Error('URL not found!');
   },
-	'itunes.apple.com': data => {
+  'itunes.apple.com': data => {
     data = Object.values(data)[0];
     let name = data.data.attributes.name;
     const year = (data.data.attributes.releaseDate || '').substr(0, 4);
     name = name.replace(new RegExp('\\s*\\(' + year + '\\)\\s*$'), '');
     name += ` (${year})`;
-  	return [
+    return [
       name,
       findUrl(data.included)
     ];
@@ -286,6 +286,6 @@ async function parseData(text) {
     }
   }
   else {
-  	alert('Movie info not found!')
+    alert('Movie info not found!')
   }
 })();

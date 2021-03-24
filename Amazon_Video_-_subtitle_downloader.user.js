@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.8.5
+// @version     1.8.6
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/(www|smile)\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/(www|smile)\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -75,6 +75,7 @@ document.head.appendChild(s);
 // XML to SRT
 function xmlToSrt(xmlString, lang) {
   xmlString = xmlString.replace(/[ \t]*<(?:tt:)?br\s*\/>[ \t]*/gi, '\n');
+  xmlString = xmlString.replace(/<\/?span\s*(?:[^>]+)?>/gi, '');
   try {
     let parser = new DOMParser();
     var xmlDoc = parser.parseFromString(xmlString, 'text/xml');
@@ -181,10 +182,20 @@ function downloadInfo(url, downloadVars) {
 
     subs.forEach(function(subInfo) {
       let lang = subInfo.languageCode;
-      if(languages.has(lang))
-        lang += '.' + subInfo.index;
+      if(subInfo.type === 'subtitle' || subInfo.type === 'subtitle') {}
+      else if(subInfo.type === 'shd')
+        lang += '[cc]';
       else
-        languages.add(lang);
+        lang += `[${subInfo.type}]`;
+      if(languages.has(lang)) {
+        let index = 0;
+        let newLang;
+        do {
+          newLang = `${lang}_${++index}`;
+        } while(languages.has(newLang));
+        lang = newLang;
+      }
+      languages.add(lang);
       if(downloadVars)
         ++downloadVars.subCounter;
       progressBar.incrementMax();
@@ -231,6 +242,7 @@ function parseURL(url) {
   });
   params.push('resourceUsage=CacheResources');
   params.push('titleDecorationScheme=primary-content');
+  params.push('subtitleFormat=TTMLv2');
   params.push('asin=');
   urlParts[1] = params.join('&');
   return urlParts.join('?');

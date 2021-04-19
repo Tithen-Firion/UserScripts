@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.4.5
+// @version     3.5.0
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -80,6 +80,7 @@ const DOWNLOAD_MENU = `<lh class="list-header">Netflix subtitle downloader</lh>
 <li class="list-header">Netflix subtitle downloader</li>
 <li class="track download">Download subs for this episode</li>
 <li class="track download-all">Download subs from this ep till last available</li>
+<li class="track ep-title-in-filename">Add episode title to filename: <span></span></li>
 <li class="track force-all-lang">Force Netflix to show all languages: <span></span></li>
 <li class="track lang-setting">Languages to download: <span></span></li>
 <li class="track sub-format">Subtitle format: prefer <span></span></li>`;
@@ -100,10 +101,14 @@ let zip;
 let subCache = {};
 let batch = false;
 
+let epTitleInFilename = localStorage.getItem('NSD_ep-title-in-filename') === 'true';
 let forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
 let langs = localStorage.getItem('NSD_lang-setting') || '';
 let subFormat = localStorage.getItem('NSD_sub-format') || WEBVTT;
 
+const setEpTitleInFilename = () => {
+  document.querySelector('.subtitle-downloader-menu > .ep-title-in-filename > span').innerHTML = (epTitleInFilename ? 'on' : 'off');
+};
 const setForceText = () => {
   document.querySelector('.subtitle-downloader-menu > .force-all-lang > span').innerHTML = (forceSubs ? 'on' : 'off');
 };
@@ -114,6 +119,14 @@ const setFormatText = () => {
   document.querySelector('.subtitle-downloader-menu > .sub-format > span').innerHTML = FORMAT_NAMES[subFormat];
 };
 
+const toggleEpTitleInFilename = () => {
+  epTitleInFilename = !epTitleInFilename;
+  if(epTitleInFilename)
+    localStorage.setItem('NSD_ep-title-in-filename', epTitleInFilename);
+  else
+    localStorage.removeItem('NSD_ep-title-in-filename');
+  document.location.reload();
+};
 const toggleForceLang = () => {
   forceSubs = !forceSubs;
   if(forceSubs)
@@ -153,6 +166,8 @@ const popRandomElement = arr => {
   return arr.splice(arr.length * Math.random() << 0, 1)[0];
 };
 
+const fixTitle = element => element.textContent.trim().replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.');
+
 // get show name or full name with episode number
 const __getTitle = full => {
   if(typeof full === 'undefined')
@@ -160,16 +175,19 @@ const __getTitle = full => {
   const titleElement = document.querySelector(MAIN_TITLE);
   if(titleElement === null)
     return null;
-  const title = [titleElement.textContent.replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.')];
+  const title = [fixTitle(titleElement)];
   if(full) {
     const episodeElement = titleElement.nextElementSibling;
     if(episodeElement) {
       const m = episodeElement.textContent.match(/^[^\d]*(\d+)[^\d]+(\d+)[^\d]*$/);
       if(episodeElement.nextElementSibling && m && m.length == 3) {
         title.push(`S${m[1].padStart(2, '0')}E${m[2].padStart(2, '0')}`);
+        if(epTitleInFilename) {
+          title.push(fixTitle(episodeElement.nextElementSibling));
+        }
       }
       else {
-        title.push(episodeElement.textContent.trim().replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.'));
+        title.push(fixTitle(episodeElement));
       }
     }
     title.push('WEBRip.Netflix');
@@ -429,9 +447,11 @@ const observer = new MutationObserver(function(mutations) {
           trackMenu.appendChild(ol);
           ol.querySelector('.download').addEventListener('click', downloadThis);
           ol.querySelector('.download-all').addEventListener('click', downloadAll);
+          ol.querySelector('.ep-title-in-filename').addEventListener('click', toggleEpTitleInFilename);
           ol.querySelector('.force-all-lang').addEventListener('click', toggleForceLang);
           ol.querySelector('.lang-setting').addEventListener('click', setLangToDownload);
           ol.querySelector('.sub-format').addEventListener('click', setSubFormat);
+          setEpTitleInFilename();
           setForceText();
           setLangsText();
           setFormatText();

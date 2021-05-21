@@ -2,7 +2,7 @@
 // @name        iTunes - subtitle downloader
 // @description Allows you to download subtitles from iTunes
 // @license     MIT
-// @version     1.3.2
+// @version     1.3.3
 // @namespace   tithen-firion.github.io
 // @include     https://itunes.apple.com/*/movie/*
 // @include     https://tv.apple.com/*/movie/*
@@ -133,7 +133,7 @@ async function _download(name, url) {
 
   const mainProgressBar = new ProgressBar(1);
   const SUBTITLES = (await getM3U8(url)).mediaGroups.SUBTITLES;
-  const subGroup = SUBTITLES.subtitles_ak || SUBTITLES.subtitles_ap || SUBTITLES.subtitles_ap3;
+  const subGroup = SUBTITLES.subtitles_ak || SUBTITLES.subtitles_ap || SUBTITLES.subtitles_ap3 || SUBTITLES['subtitles_vod-ak-amt.tv.apple.com'] || SUBTITLES['subtitles_vod-ap-amt.tv.apple.com'] || SUBTITLES['subtitles_vod-ap3-amt.tv.apple.com'];
   if(typeof subGroup === 'undefined') {
     alert('No subtitles found!');
     mainProgressBar.destroy();

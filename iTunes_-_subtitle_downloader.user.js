@@ -2,7 +2,7 @@
 // @name        iTunes - subtitle downloader
 // @description Allows you to download subtitles from iTunes
 // @license     MIT
-// @version     1.3.3
+// @version     1.3.4
 // @namespace   tithen-firion.github.io
 // @include     https://itunes.apple.com/*/movie/*
 // @include     https://tv.apple.com/*/movie/*
@@ -162,8 +162,17 @@ async function _download(name, url) {
 
     const subtitleSegments = await asyncPool(20, segmentURLs, partial);
     let subtitleContent = subtitleSegments.join('\n\n');
+    // this gets rid of all WEBVTT lines except for the first one
     subtitleContent = subtitleContent.replace(/\nWEBVTT\n.*?\n\n/g, '\n');
     subtitleContent = subtitleContent.replace(/\n{3,}/g, '\n\n');
+
+    // add RTL Unicode character to Arabic subs to all lines except for:
+    // - lines that already have it (\u202B or \u200F)
+    // - first two lines of the file (WEBVTT and X-TIMESTAMP)
+    // - timestamps (may match the actual subtitle lines but it's unlikely)
+    // - empty lines
+    if(lang.startsWith('ar'))
+      subtitleContent = subtitleContent.replace(/^(?!\u202B|\u200F|WEBVTT|X-TIMESTAMP|\d{2}:\d{2}:\d{2}\.\d{3} \-\-> \d{2}:\d{2}:\d{2}\.\d{3}|\n)/gm, '\u202B');
 
     zip.file(`${name} WEBRip.iTunes.${lang}.vtt`, subtitleContent);
 

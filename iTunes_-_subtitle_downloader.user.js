@@ -2,7 +2,7 @@
 // @name        iTunes - subtitle downloader
 // @description Allows you to download subtitles from iTunes
 // @license     MIT
-// @version     1.3.4
+// @version     1.3.5
 // @namespace   tithen-firion.github.io
 // @include     https://itunes.apple.com/*/movie/*
 // @include     https://tv.apple.com/*/movie/*
@@ -133,12 +133,33 @@ async function _download(name, url) {
 
   const mainProgressBar = new ProgressBar(1);
   const SUBTITLES = (await getM3U8(url)).mediaGroups.SUBTITLES;
-  const subGroup = SUBTITLES.subtitles_ak || SUBTITLES.subtitles_ap || SUBTITLES.subtitles_ap3 || SUBTITLES['subtitles_vod-ak-amt.tv.apple.com'] || SUBTITLES['subtitles_vod-ap-amt.tv.apple.com'] || SUBTITLES['subtitles_vod-ap3-amt.tv.apple.com'];
-  if(typeof subGroup === 'undefined') {
+  const keys = Object.keys(SUBTITLES);
+
+  if(keys.length === 0) {
     alert('No subtitles found!');
     mainProgressBar.destroy();
     return;
   }
+
+  let selectedKey = null;
+  for(const regexp of ['_ak$', '-ak-', '_ap$', '-ap-', , '_ap1$', '-ap1-', , '_ap3$', '-ap3-']) {
+    for(const key of keys) {
+      if(key.match(regexp) !== null) {
+        selectedKey = key;
+        break;
+      }
+    }
+    if(selectedKey !== null)
+      break;
+  }
+
+  if(selectedKey === null) {
+    selectedKey = keys[0];
+    alert('Warnign, unknown subtitle type: ' + selectedKey + '\n\nReport that on script\'s page.');
+  }
+
+  const subGroup = SUBTITLES[selectedKey];
+
   let subInfo = Object.values(subGroup);
   subInfo = filterLangs(subInfo);
   mainProgressBar.max = subInfo.length;

@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     3.5.0
+// @version     4.0.0
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -10,7 +10,7 @@
 // @require     https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js@283f438c31776b622670be002caf1986c40ce90c/dist/FileSaver.min.js?version=2018-12-29
 // ==/UserScript==
 
-class ProgressBar { 
+class ProgressBar {
   constructor(max) {
     this.current = 0;
     this.max = max;
@@ -58,9 +58,6 @@ class ProgressBar {
 }
 
 const STOP_THE_DOWNLOAD = 'NETFLIX_SUBTITLE_DOWNLOADER_STOP_THE_DOWNLOAD';
-const MAIN_TITLE = '.player-status-main-title, .ellipsize-text>h4, .video-title>h4';
-const TRACK_MENU = '#player-menu-track-settings, .audio-subtitle-controller';
-const NEXT_EPISODE = '.player-next-episode:not(.player-hidden), .button-nfplayerNextEpisode';
 
 const WEBVTT = 'webvtt-lssdh-ios8';
 const DFXP = 'dfxp-ls-sdh';
@@ -76,20 +73,36 @@ EXTENSIONS[WEBVTT] = 'vtt';
 EXTENSIONS[DFXP] = 'dfxp';
 EXTENSIONS[SIMPLE] = 'xml';
 
-const DOWNLOAD_MENU = `<lh class="list-header">Netflix subtitle downloader</lh>
-<li class="list-header">Netflix subtitle downloader</li>
-<li class="track download">Download subs for this episode</li>
-<li class="track download-all">Download subs from this ep till last available</li>
-<li class="track ep-title-in-filename">Add episode title to filename: <span></span></li>
-<li class="track force-all-lang">Force Netflix to show all languages: <span></span></li>
-<li class="track lang-setting">Languages to download: <span></span></li>
-<li class="track sub-format">Subtitle format: prefer <span></span></li>`;
+const DOWNLOAD_MENU = `<li class="header">Netflix subtitle downloader</li>
+<li class="download">Download subs for this episode</li>
+<!--<li class="download-all">Download subs from this ep till last available</li>-->
+<li class="ep-title-in-filename">Add episode title to filename: <span></span></li>
+<li class="force-all-lang">Force Netflix to show all languages: <span></span></li>
+<li class="lang-setting">Languages to download: <span></span></li>
+<li class="sub-format">Subtitle format: prefer <span></span></li>`;
 
-const SCRIPT_CSS = `.player-timed-text-tracks, .track-list-subtitles{ border-right:1px solid #000 }
-.player-timed-text-tracks+.player-timed-text-tracks, .track-list-subtitles+.track-list-subtitles{ border-right:0 }
-.subtitle-downloader-menu { list-style:none }
-#player-menu-track-settings .subtitle-downloader-menu li.list-header,
-.audio-subtitle-controller .subtitle-downloader-menu lh.list-header{ display:none }`;
+const SCRIPT_CSS = `
+.subtitle-downloader-menu {
+  list-style: none;
+  position: relative;
+  display: none;
+  width: 300px;
+  background: #333;
+  color: #fff;
+  padding: 0;
+  margin: auto;
+  font-size: 12px;
+}
+body:hover .subtitle-downloader-menu { display: block; }
+.subtitle-downloader-menu li { padding: 10px; }
+.subtitle-downloader-menu li.header { font-weight: bold; }
+.subtitle-downloader-menu li:not(.header):hover { background: #666; }
+.subtitle-downloader-menu li:not(.header) {
+  display: none;
+  cursor: pointer;
+}
+.subtitle-downloader-menu:hover li { display: block; }
+`;
 
 const SUB_TYPES = {
   'subtitles': '',
@@ -99,6 +112,7 @@ const SUB_TYPES = {
 let idOverrides = {};
 let zip;
 let subCache = {};
+let titleCache = {};
 let batch = false;
 
 let epTitleInFilename = localStorage.getItem('NSD_ep-title-in-filename') === 'true';
@@ -125,7 +139,7 @@ const toggleEpTitleInFilename = () => {
     localStorage.setItem('NSD_ep-title-in-filename', epTitleInFilename);
   else
     localStorage.removeItem('NSD_ep-title-in-filename');
-  document.location.reload();
+  setEpTitleInFilename();
 };
 const toggleForceLang = () => {
   forceSubs = !forceSubs;
@@ -166,50 +180,8 @@ const popRandomElement = arr => {
   return arr.splice(arr.length * Math.random() << 0, 1)[0];
 };
 
-const fixTitle = element => element.textContent.trim().replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.');
-
-// get show name or full name with episode number
-const __getTitle = full => {
-  if(typeof full === 'undefined')
-    full = true;
-  const titleElement = document.querySelector(MAIN_TITLE);
-  if(titleElement === null)
-    return null;
-  const title = [fixTitle(titleElement)];
-  if(full) {
-    const episodeElement = titleElement.nextElementSibling;
-    if(episodeElement) {
-      const m = episodeElement.textContent.match(/^[^\d]*(\d+)[^\d]+(\d+)[^\d]*$/);
-      if(episodeElement.nextElementSibling && m && m.length == 3) {
-        title.push(`S${m[1].padStart(2, '0')}E${m[2].padStart(2, '0')}`);
-        if(epTitleInFilename) {
-          title.push(fixTitle(episodeElement.nextElementSibling));
-        }
-      }
-      else {
-        title.push(fixTitle(episodeElement));
-      }
-    }
-    title.push('WEBRip.Netflix');
-  }
-  return title.join('.');
-};
-// helper function, periodically checking for the title and resolving promise if found
-const _getTitle = (full, resolve) => {
-  const title = __getTitle(full);
-  if(title === null)
-    window.setTimeout(_getTitle, 200, full, resolve);
-  else
-    resolve(title);
-};
-// promise of a title
-const getTitle = full => new Promise(resolve => {
-  _getTitle(full, resolve);
-});
-
 const processSubInfo = async result => {
   const tracks = result.timedtexttracks;
-  const titleP = getTitle();
   const subs = {};
   for(const track of tracks) {
     if(track.isNoneTrack)
@@ -229,32 +201,93 @@ const processSubInfo = async result => {
     if(Object.keys(formats).length > 0)
       subs[lang] = formats;
   }
-  subCache[result.movieId] = {titleP, subs};
+  subCache[result.movieId] = subs;
+
+  // add menu when it's not there
+  if(document.querySelector('.subtitle-downloader-menu') === null) {
+    let ol = document.createElement('ol');
+    ol.setAttribute('class', 'subtitle-downloader-menu player-timed-text-tracks track-list track-list-subtitles');
+    ol.innerHTML = DOWNLOAD_MENU;
+    document.body.appendChild(ol);
+    ol.querySelector('.download').addEventListener('click', downloadThis);
+    //ol.querySelector('.download-all').addEventListener('click', downloadAll);
+    ol.querySelector('.ep-title-in-filename').addEventListener('click', toggleEpTitleInFilename);
+    ol.querySelector('.force-all-lang').addEventListener('click', toggleForceLang);
+    ol.querySelector('.lang-setting').addEventListener('click', setLangToDownload);
+    ol.querySelector('.sub-format').addEventListener('click', setSubFormat);
+    setEpTitleInFilename();
+    setForceText();
+    setLangsText();
+    setFormatText();
+  }
 
   if(batch) {
     downloadAll();
   }
 };
 
-const getSubsFromCache = () => {
+const processMetadata = data => {
+  const result = data.video;
+  const {type, title} = result;
+  if(type === 'show') {
+    for(const season of result.seasons) {
+      for(const episode of season.episodes) {
+        titleCache[episode.id] = {
+          type, title,
+          season: season.seq,
+          episode: episode.seq,
+          subtitle: episode.title,
+          hiddenNumber: episode.hiddenEpisodeNumbers
+        };
+      }
+    }
+  }
+  else if(type === 'movie') {
+    titleCache[result.id] = {type, title};
+  }
+};
+
+const getXFromCache = (cache, name) => {
   const id = window.location.pathname.split('/').pop();
-  if(subCache.hasOwnProperty(id))
-    return subCache[id];
+  if(cache.hasOwnProperty(id))
+    return cache[id];
 
   let newID = undefined;
   try {
     newID = unsafeWindow.netflix.falcorCache.videos[id].current.value[1];
   }
   catch(ignore) {}
-  if(typeof newID !== 'undefined' && subCache.hasOwnProperty(newID))
-    return subCache[newID];
+  if(typeof newID !== 'undefined' && cache.hasOwnProperty(newID))
+    return cache[newID];
 
   newID = idOverrides[id];
-  if(typeof newID !== 'undefined' && subCache.hasOwnProperty(newID))
-    return subCache[newID];
+  if(typeof newID !== 'undefined' && cache.hasOwnProperty(newID))
+    return cache[newID];
 
-  alert("Couldn't find subs, try refreshing the page.");
+  alert("Couldn't find the " + name + ". Wait until the player is loaded. If that doesn't help refresh the page.");
   throw '';
+};
+
+const getSubsFromCache = () => getXFromCache(subCache, 'subs');
+
+const pad = (number, letter) => `${letter}${number.toString().padStart(2, '0')}`;
+
+const getTitleFromCache = () => {
+  const title = getXFromCache(titleCache, 'title');
+  const titleParts = [title.title];
+  if(title.type === 'show') {
+    const season = pad(title.season, 'S');
+    if(title.hiddenNumber) {
+      titleParts.push(season);
+      titleParts.push(title.subtitle);
+    }
+    else {
+      titleParts.push(season + pad(title.episode, 'E'));
+      if(epTitleInFilename)
+        titleParts.push(title.subtitle);
+    }
+  }
+  return titleParts.join('.').trim().replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.');
 };
 
 const pickFormat = formats => {
@@ -275,8 +308,8 @@ const _save = async (_zip, title) => {
 };
 
 const _download = async _zip => {
-  const showTitle = getTitle(false);
-  const {titleP, subs} = getSubsFromCache();
+  const subs = getSubsFromCache();
+  const title = getTitleFromCache();
   const downloaded = [];
 
   let filteredLangs;
@@ -330,46 +363,47 @@ const _download = async _zip => {
     if(stop)
       break;
   }
-  const title = await titleP;
 
   downloaded.forEach(x => {
     const {lang, data, extension} = x;
-    _zip.file(`${title}.${lang}.${extension}`, data);
+    _zip.file(`${title}.WEBRip.Netflix.${lang}.${extension}`, data);
   });
 
   if(await Promise.race([progress.stop, {}]) === STOP_THE_DOWNLOAD)
     stop = true;
   progress.destroy();
 
-  return [await showTitle, stop];
+  return [title, stop];
 };
 
 const downloadThis = async () => {
   const _zip = new JSZip();
-  const [showTitle, stop] = await _download(_zip);
-  _save(_zip, showTitle);
+  const [title, stop] = await _download(_zip);
+  _save(_zip, title);
 };
 
-const downloadAll = async () => {
+/*const downloadAll = async () => {
   zip = zip || new JSZip();
   batch = true;
-  const [showTitle, stop] = await _download(zip);
+  const [title, stop] = await _download(zip);
   const nextEp = document.querySelector(NEXT_EPISODE);
   if(!stop && nextEp)
     nextEp.click();
   else {
-    await _save(zip, showTitle);
+    await _save(zip, title);
     zip = undefined;
     batch = false;
   }
-};
+};*/
 
 const processMessage = e => {
-  const override = e.detail.id_override;
-  if(typeof override !== 'undefined')
-    idOverrides[override[0]] = override[1];
-  else
-    processSubInfo(e.detail);
+  const {type, data} = e.detail;
+  if(type === 'subs')
+    processSubInfo(data);
+  else if(type === 'id_override')
+    idOverrides[data[0]] = data[1];
+  else if(type === 'metadata')
+    processMetadata(data);
 }
 
 const injection = () => {
@@ -378,20 +412,23 @@ const injection = () => {
   const forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
 
   // hijack JSON.parse and JSON.stringify functions
-  ((parse, stringify) => {
+  ((parse, stringify, open) => {
     JSON.parse = function (text) {
       const data = parse(text);
+
       if (data && data.result && data.result.timedtexttracks && data.result.movieId) {
-        window.dispatchEvent(new CustomEvent('netflix_sub_downloader_data', {detail: data.result}));
+        window.dispatchEvent(new CustomEvent('netflix_sub_downloader_data', {detail: {type: 'subs', data: data.result}}));
       }
       return data;
     };
+
     JSON.stringify = function (data) {
       /*{
         let text = stringify(data);
         if (text.includes('dfxp-ls-sdh'))
           console.log(text, data);
       }*/
+
       if (data && typeof data.url === 'string' && data.url.search(MANIFEST_PATTERN) > -1) {
         for (let v of Object.values(data)) {
           try {
@@ -412,13 +449,21 @@ const injection = () => {
         try {
           let videoId = data.params.sessionParams.uiplaycontext.video_id;
           if(typeof videoId === 'number' && videoId !== data.movieId)
-            window.dispatchEvent(new CustomEvent('netflix_sub_downloader_data', {detail: {id_override: [videoId, data.movieId]}}));
+            window.dispatchEvent(new CustomEvent('netflix_sub_downloader_data', {detail: {type: 'id_override', data: [videoId, data.movieId]}}));
         }
         catch(ignore) {}
       }
       return stringify(data);
     };
-  })(JSON.parse, JSON.stringify);
+
+    XMLHttpRequest.prototype.open = function() {
+      if(arguments[1] && arguments[1].includes('/metadata?'))
+        this.addEventListener('load', () => {
+          window.dispatchEvent(new CustomEvent('netflix_sub_downloader_data', {detail: {type: 'metadata', data: this.response}}));
+        }, false);
+      open.apply(this, arguments);
+    };
+  })(JSON.parse, JSON.stringify, XMLHttpRequest.prototype.open);
 }
 
 window.addEventListener('netflix_sub_downloader_data', processMessage, false);
@@ -434,29 +479,14 @@ const s = document.createElement('style');
 s.innerHTML = SCRIPT_CSS;
 document.head.appendChild(s);
 
-// add menu when it's not there
 const observer = new MutationObserver(function(mutations) {
   mutations.forEach(function(mutation) {
     mutation.addedNodes.forEach(function(node) {
-      if(node.nodeName.toUpperCase() == 'DIV') {
-        let trackMenu = (node.parentNode || node).querySelector(TRACK_MENU);
-        if(trackMenu !== null && trackMenu.querySelector('.subtitle-downloader-menu') === null) {
-          let ol = document.createElement('ol');
-          ol.setAttribute('class', 'subtitle-downloader-menu player-timed-text-tracks track-list track-list-subtitles');
-          ol.innerHTML = DOWNLOAD_MENU;
-          trackMenu.appendChild(ol);
-          ol.querySelector('.download').addEventListener('click', downloadThis);
-          ol.querySelector('.download-all').addEventListener('click', downloadAll);
-          ol.querySelector('.ep-title-in-filename').addEventListener('click', toggleEpTitleInFilename);
-          ol.querySelector('.force-all-lang').addEventListener('click', toggleForceLang);
-          ol.querySelector('.lang-setting').addEventListener('click', setLangToDownload);
-          ol.querySelector('.sub-format').addEventListener('click', setSubFormat);
-          setEpTitleInFilename();
-          setForceText();
-          setLangsText();
-          setFormatText();
-        }
+      // add scrollbar - Netflix doesn't expect you to have this manu languages to choose from...
+      try {
+        (node.parentNode || node).querySelector('.watch-video--selector-audio-subtitle').parentNode.style.overflowY = 'scroll';
       }
+      catch(ignore) {}
     });
   });
 });

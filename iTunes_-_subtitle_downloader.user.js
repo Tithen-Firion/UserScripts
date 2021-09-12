@@ -2,7 +2,7 @@
 // @name        iTunes - subtitle downloader
 // @description Allows you to download subtitles from iTunes
 // @license     MIT
-// @version     1.3.5
+// @version     1.3.6
 // @namespace   tithen-firion.github.io
 // @include     https://itunes.apple.com/*/movie/*
 // @include     https://tv.apple.com/*/movie/*
@@ -233,10 +233,18 @@ const parsers = {
         const data2 = JSON.parse(value).d.data;
         const content = data2.content;
         if(content.type === 'Movie') {
-          const playable = content.playables[0];
+          const playables = content.playables || data2.playables;
+          const playable = playables[Object.keys(playables)[0]];
+          let url;
+          try {
+          	url = playable.itunesMediaApiData.offers[0].hlsUrl;
+          }
+          catch(ignore) {
+          	url = playable.assets.hlsUrl;
+          }
           return [
             playable.title,
-            playable.itunesMediaApiData.offers[0].hlsUrl
+            url
           ];
         }
         else if(content.type === 'Episode') {
@@ -251,7 +259,7 @@ const parsers = {
       }
       catch(ignore){}
     }
-    throw new Error('URL not found!');
+    return [null, null];
   },
   'itunes.apple.com': data => {
     data = Object.values(data)[0];
@@ -269,6 +277,10 @@ const parsers = {
 async function parseData(text) {
   const data = JSON.parse(text);
   const [name, m3u8Url] = parsers[document.location.hostname](data);
+  if(m3u8Url === null) {
+  	alert("Subtitles URL not found. Make sure you're logged in!");
+    return;
+  }
 
   const container = document.createElement('div');
   container.style.position = 'absolute';

@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     4.0.1
+// @version     4.0.2
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -73,35 +73,46 @@ EXTENSIONS[WEBVTT] = 'vtt';
 EXTENSIONS[DFXP] = 'dfxp';
 EXTENSIONS[SIMPLE] = 'xml';
 
-const DOWNLOAD_MENU = `<li class="header">Netflix subtitle downloader</li>
+const DOWNLOAD_MENU = `
+<ol>
+<li class="header">Netflix subtitle downloader</li>
 <li class="download">Download subs for this episode</li>
 <!--<li class="download-all">Download subs from this ep till last available</li>-->
 <li class="ep-title-in-filename">Add episode title to filename: <span></span></li>
 <li class="force-all-lang">Force Netflix to show all languages: <span></span></li>
 <li class="lang-setting">Languages to download: <span></span></li>
-<li class="sub-format">Subtitle format: prefer <span></span></li>`;
+<li class="sub-format">Subtitle format: prefer <span></span></li>
+</ol>
+`;
 
 const SCRIPT_CSS = `
-.subtitle-downloader-menu {
+#subtitle-downloader-menu {
+  position: absolute;
+  display: none;
+  width: 100%;
+  top: 0;
+  left: 0;
+}
+#subtitle-downloader-menu ol {
   list-style: none;
   position: relative;
-  display: none;
   width: 300px;
   background: #333;
   color: #fff;
   padding: 0;
   margin: auto;
   font-size: 12px;
+  z-index: 99999998;
 }
-body:hover .subtitle-downloader-menu { display: block; }
-.subtitle-downloader-menu li { padding: 10px; }
-.subtitle-downloader-menu li.header { font-weight: bold; }
-.subtitle-downloader-menu li:not(.header):hover { background: #666; }
-.subtitle-downloader-menu li:not(.header) {
+body:hover #subtitle-downloader-menu { display: block; }
+#subtitle-downloader-menu li { padding: 10px; }
+#subtitle-downloader-menu li.header { font-weight: bold; }
+#subtitle-downloader-menu li:not(.header):hover { background: #666; }
+#subtitle-downloader-menu li:not(.header) {
   display: none;
   cursor: pointer;
 }
-.subtitle-downloader-menu:hover li { display: block; }
+#subtitle-downloader-menu:hover li { display: block; }
 `;
 
 const SUB_TYPES = {
@@ -121,16 +132,16 @@ let langs = localStorage.getItem('NSD_lang-setting') || '';
 let subFormat = localStorage.getItem('NSD_sub-format') || WEBVTT;
 
 const setEpTitleInFilename = () => {
-  document.querySelector('.subtitle-downloader-menu > .ep-title-in-filename > span').innerHTML = (epTitleInFilename ? 'on' : 'off');
+  document.querySelector('#subtitle-downloader-menu .ep-title-in-filename > span').innerHTML = (epTitleInFilename ? 'on' : 'off');
 };
 const setForceText = () => {
-  document.querySelector('.subtitle-downloader-menu > .force-all-lang > span').innerHTML = (forceSubs ? 'on' : 'off');
+  document.querySelector('#subtitle-downloader-menu .force-all-lang > span').innerHTML = (forceSubs ? 'on' : 'off');
 };
 const setLangsText = () => {
-  document.querySelector('.subtitle-downloader-menu > .lang-setting > span').innerHTML = (langs === '' ? 'all' : langs);
+  document.querySelector('#subtitle-downloader-menu .lang-setting > span').innerHTML = (langs === '' ? 'all' : langs);
 };
 const setFormatText = () => {
-  document.querySelector('.subtitle-downloader-menu > .sub-format > span').innerHTML = FORMAT_NAMES[subFormat];
+  document.querySelector('#subtitle-downloader-menu .sub-format > span').innerHTML = FORMAT_NAMES[subFormat];
 };
 
 const toggleEpTitleInFilename = () => {
@@ -204,22 +215,24 @@ const processSubInfo = async result => {
   subCache[result.movieId] = subs;
 
   // add menu when it's not there
-  if(document.querySelector('.subtitle-downloader-menu') === null) {
-    let ol = document.createElement('ol');
-    ol.setAttribute('class', 'subtitle-downloader-menu player-timed-text-tracks track-list track-list-subtitles');
-    ol.innerHTML = DOWNLOAD_MENU;
-    document.body.appendChild(ol);
-    ol.querySelector('.download').addEventListener('click', downloadThis);
-    //ol.querySelector('.download-all').addEventListener('click', downloadAll);
-    ol.querySelector('.ep-title-in-filename').addEventListener('click', toggleEpTitleInFilename);
-    ol.querySelector('.force-all-lang').addEventListener('click', toggleForceLang);
-    ol.querySelector('.lang-setting').addEventListener('click', setLangToDownload);
-    ol.querySelector('.sub-format').addEventListener('click', setSubFormat);
+  let menu = document.querySelector('#subtitle-downloader-menu');
+  if(menu === null) {
+    menu = document.createElement('div');
+    menu.id = 'subtitle-downloader-menu';
+    menu.innerHTML = DOWNLOAD_MENU;
+    document.body.appendChild(menu);
+    menu.querySelector('.download').addEventListener('click', downloadThis);
+    //menu.querySelector('.download-all').addEventListener('click', downloadAll);
+    menu.querySelector('.ep-title-in-filename').addEventListener('click', toggleEpTitleInFilename);
+    menu.querySelector('.force-all-lang').addEventListener('click', toggleForceLang);
+    menu.querySelector('.lang-setting').addEventListener('click', setLangToDownload);
+    menu.querySelector('.sub-format').addEventListener('click', setSubFormat);
     setEpTitleInFilename();
     setForceText();
     setLangsText();
     setFormatText();
   }
+  menu.style.display = (document.location.pathname.split('/')[1] === 'watch' ? '' : 'none');
 
   if(batch) {
     downloadAll();

@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.8.6
+// @version     1.8.7
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/(www|smile)\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/(www|smile)\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -274,8 +274,9 @@ function findMovieID() {
     catch(ignore) {
       continue;
     }
-    if(typeof data.initArgs !== 'undefined' && typeof data.initArgs.titleID !== 'undefined')
-      return data.initArgs.titleID;
+    const args = data.initArgs || data.args;
+    if(typeof args !== 'undefined' && typeof args.titleID !== 'undefined')
+      return args.titleID;
   }
   throw Error("Couldn't find movie ID");
 }

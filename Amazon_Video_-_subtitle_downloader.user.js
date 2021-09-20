@@ -173,6 +173,13 @@ function downloadInfo(url, downloadVars) {
     });
 
     var subs = (info.subtitleUrls || []).concat(forced);
+
+    if(subs.length === 0) {
+      alert("No subs found, make sure you're logged in and you have access to watch this video!");
+      progressBar.destroy();
+      return;
+    }
+
     if(subs.length > 1 && !downloadVars) {
       downloadVars = {
         subCounter: 0,

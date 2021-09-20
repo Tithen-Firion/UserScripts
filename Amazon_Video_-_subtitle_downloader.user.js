@@ -161,6 +161,7 @@ function downloadInfo(url, downloadVars) {
         }
       });
       title += '.S' + season.toString().padStart(2, '0') + '.E' + ep.toString().padStart(2, '0');
+      title += '.' + epInfo.title;
     }
     title = title.replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.');
     title += '.WEBRip.Amazon.';

@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     4.0.2
+// @version     4.0.3
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -77,7 +77,7 @@ const DOWNLOAD_MENU = `
 <ol>
 <li class="header">Netflix subtitle downloader</li>
 <li class="download">Download subs for this episode</li>
-<!--<li class="download-all">Download subs from this ep till last available</li>-->
+<li class="download-all">Download subs from this ep till last available</li>
 <li class="ep-title-in-filename">Add episode title to filename: <span></span></li>
 <li class="force-all-lang">Force Netflix to show all languages: <span></span></li>
 <li class="lang-setting">Languages to download: <span></span></li>
@@ -124,7 +124,10 @@ let idOverrides = {};
 let zip;
 let subCache = {};
 let titleCache = {};
-let batch = false;
+let batch = new URLSearchParams(unsafeWindow.location.search).has('subtitle-batch');
+let nextEpisodeId = null;
+let loadedSubs = false;
+let loadedMetadata = false;
 
 let epTitleInFilename = localStorage.getItem('NSD_ep-title-in-filename') === 'true';
 let forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
@@ -222,7 +225,7 @@ const processSubInfo = async result => {
     menu.innerHTML = DOWNLOAD_MENU;
     document.body.appendChild(menu);
     menu.querySelector('.download').addEventListener('click', downloadThis);
-    //menu.querySelector('.download-all').addEventListener('click', downloadAll);
+    menu.querySelector('.download-all').addEventListener('click', downloadAll);
     menu.querySelector('.ep-title-in-filename').addEventListener('click', toggleEpTitleInFilename);
     menu.querySelector('.force-all-lang').addEventListener('click', toggleForceLang);
     menu.querySelector('.lang-setting').addEventListener('click', setLangToDownload);
@@ -233,8 +236,9 @@ const processSubInfo = async result => {
     setFormatText();
   }
   menu.style.display = (document.location.pathname.split('/')[1] === 'watch' ? '' : 'none');
-
-  if(batch) {
+  
+  loadedSubs = true;
+  if (batch && loadedMetadata) {
     downloadAll();
   }
 };
@@ -242,9 +246,16 @@ const processSubInfo = async result => {
 const processMetadata = data => {
   const result = data.video;
   const {type, title} = result;
+  
   if(type === 'show') {
+    let prev = null;
     for(const season of result.seasons) {
       for(const episode of season.episodes) {
+        if (result.currentEpisode === prev) {
+		  // keep track of the next episode to use with batch downloads
+          nextEpisodeId = episode.id;
+        }
+        prev = episode.id;
         titleCache[episode.id] = {
           type, title,
           season: season.seq,
@@ -260,6 +271,11 @@ const processMetadata = data => {
   }
   else {
   	console.debug('[Netflix Subtitle Downloader] unknown video type:', type, result)
+  }
+  
+  loadedMetadata = true;
+  if (batch && loadedSubs) {
+    downloadAll();
   }
 };
 
@@ -398,19 +414,20 @@ const downloadThis = async () => {
   _save(_zip, title);
 };
 
-/*const downloadAll = async () => {
+const downloadAll = async () => {
   zip = zip || new JSZip();
   batch = true;
   const [title, stop] = await _download(zip);
-  const nextEp = document.querySelector(NEXT_EPISODE);
-  if(!stop && nextEp)
-    nextEp.click();
-  else {
-    await _save(zip, title);
-    zip = undefined;
-    batch = false;
+  await _save(zip, title);
+  
+  if (nextEpisodeId) {
+    unsafeWindow.location.href = unsafeWindow.location.origin + '/watch/' + nextEpisodeId + '?subtitle-batch';
+  } else {
+	// staying on the current page will autoplay the last episode of the batch
+	// this is probably undesired and could spoil an unsuspecting user, so return to the main page
+    unsafeWindow.location.href = unsafeWindow.location.origin;
   }
-};*/
+};
 
 const processMessage = e => {
   const {type, data} = e.detail;

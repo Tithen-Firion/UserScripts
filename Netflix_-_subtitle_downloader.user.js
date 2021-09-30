@@ -89,9 +89,9 @@ const SCRIPT_CSS = `
 #subtitle-downloader-menu {
   position: absolute;
   display: none;
-  width: 100%;
+  width: 300px;
   top: 0;
-  left: 0;
+  left: calc( 50% - 150px );
 }
 #subtitle-downloader-menu ol {
   list-style: none;

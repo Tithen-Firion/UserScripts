@@ -76,7 +76,7 @@ EXTENSIONS[SIMPLE] = 'xml';
 const DOWNLOAD_MENU = `
 <ol>
 <li class="header">Netflix subtitle downloader</li>
-<li class="download">Download subs for this episode</li>
+<li class="download">Download subs for this <span class="series">episode</span><span class="not-series">movie</span></li>
 <!--<li class="download-all">Download subs from this ep till last available</li>-->
 <li class="ep-title-in-filename">Add episode title to filename: <span></span></li>
 <li class="force-all-lang">Force Netflix to show all languages: <span></span></li>
@@ -113,6 +113,9 @@ body:hover #subtitle-downloader-menu { display: block; }
   cursor: pointer;
 }
 #subtitle-downloader-menu:hover li { display: block; }
+
+#subtitle-downloader-menu:not(.series) .series{ display: none; }
+#subtitle-downloader-menu.series .not-series{ display: none; }
 `;
 
 const SUB_TYPES = {
@@ -214,6 +217,16 @@ const processSubInfo = async result => {
   }
   subCache[result.movieId] = subs;
 
+  // show menu if on watch page
+  const menu = document.querySelector('#subtitle-downloader-menu');
+  menu.style.display = (document.location.pathname.split('/')[1] === 'watch' ? '' : 'none');
+
+  if(batch) {
+    downloadAll();
+  }
+};
+
+const processMetadata = data => {
   // add menu when it's not there
   let menu = document.querySelector('#subtitle-downloader-menu');
   if(menu === null) {
@@ -232,17 +245,14 @@ const processSubInfo = async result => {
     setLangsText();
     setFormatText();
   }
-  menu.style.display = (document.location.pathname.split('/')[1] === 'watch' ? '' : 'none');
+  // hide menu, at this point sub info is still missing
+  menu.style.display = 'none';
+  menu.classList.remove('series');
 
-  if(batch) {
-    downloadAll();
-  }
-};
-
-const processMetadata = data => {
   const result = data.video;
   const {type, title} = result;
   if(type === 'show') {
+    menu.classList.add('series');
     for(const season of result.seasons) {
       for(const episode of season.episodes) {
         titleCache[episode.id] = {
@@ -426,6 +436,13 @@ const injection = () => {
   const WEBVTT = 'webvtt-lssdh-ios8';
   const MANIFEST_PATTERN = new RegExp('manifest|licensedManifest');
   const forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
+
+  // hide the menu when we go back to the browse list
+  window.addEventListener('popstate', () => {
+    const display = (document.location.pathname.split('/')[1] === 'watch' ? '' : 'none');
+    const menu = document.querySelector('#subtitle-downloader-menu');
+    menu.style.display = display;
+  });
 
   // hijack JSON.parse and JSON.stringify functions
   ((parse, stringify, open) => {

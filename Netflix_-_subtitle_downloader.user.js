@@ -2,12 +2,12 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     4.0.2
+// @version     4.1.0
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
-// @require     https://cdn.jsdelivr.net/gh/Stuk/jszip@579beb1d45c8d586d8be4411d5b2e48dea018c06/dist/jszip.min.js?version=3.1.5
-// @require     https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js@283f438c31776b622670be002caf1986c40ce90c/dist/FileSaver.min.js?version=2018-12-29
+// @require     https://cdn.jsdelivr.net/npm/jszip@3.7.1/dist/jszip.min.js
+// @require     https://cdn.jsdelivr.net/npm/file-saver-es@2.0.5/dist/FileSaver.min.js
 // ==/UserScript==
 
 class ProgressBar {
@@ -77,7 +77,9 @@ const DOWNLOAD_MENU = `
 <ol>
 <li class="header">Netflix subtitle downloader</li>
 <li class="download">Download subs for this <span class="series">episode</span><span class="not-series">movie</span></li>
-<!--<li class="download-all">Download subs from this ep till last available</li>-->
+<li class="download-to-end series">Download subs from this ep till last available</li>
+<li class="download-season series">Download subs for this season</li>
+<li class="download-all series">Download subs for all seasons</li>
 <li class="ep-title-in-filename">Add episode title to filename: <span></span></li>
 <li class="force-all-lang">Force Netflix to show all languages: <span></span></li>
 <li class="lang-setting">Languages to download: <span></span></li>
@@ -124,10 +126,18 @@ const SUB_TYPES = {
 };
 
 let idOverrides = {};
-let zip;
 let subCache = {};
 let titleCache = {};
-let batch = false;
+
+let batch = null;
+try {
+  batch = JSON.parse(sessionStorage.getItem('NSD_batch'));
+}
+catch(ignore) {}
+
+let batchAll = null;
+let batchSeason = null;
+let batchToEnd = null;
 
 let epTitleInFilename = localStorage.getItem('NSD_ep-title-in-filename') === 'true';
 let forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
@@ -145,6 +155,13 @@ const setLangsText = () => {
 };
 const setFormatText = () => {
   document.querySelector('#subtitle-downloader-menu .sub-format > span').innerHTML = FORMAT_NAMES[subFormat];
+};
+
+const setBatch = b => {
+  if(b === null)
+    sessionStorage.removeItem('NSD_batch');
+  else
+    sessionStorage.setItem('NSD_batch', JSON.stringify(b));
 };
 
 const toggleEpTitleInFilename = () => {
@@ -216,13 +233,18 @@ const processSubInfo = async result => {
       subs[lang] = formats;
   }
   subCache[result.movieId] = subs;
+};
+
+const checkSubsCache = async menu => {
+  while(getSubsFromCache(true) === null) {
+    await asyncSleep(0.1);
+  }
 
   // show menu if on watch page
-  const menu = document.querySelector('#subtitle-downloader-menu');
   menu.style.display = (document.location.pathname.split('/')[1] === 'watch' ? '' : 'none');
 
-  if(batch) {
-    downloadAll();
+  if(batch !== null && batch.length > 0) {
+    downloadBatch(true);
   }
 };
 
@@ -235,7 +257,9 @@ const processMetadata = data => {
     menu.innerHTML = DOWNLOAD_MENU;
     document.body.appendChild(menu);
     menu.querySelector('.download').addEventListener('click', downloadThis);
-    //menu.querySelector('.download-all').addEventListener('click', downloadAll);
+    menu.querySelector('.download-to-end').addEventListener('click', downloadToEnd);
+    menu.querySelector('.download-season').addEventListener('click', downloadSeason);
+    menu.querySelector('.download-all').addEventListener('click', downloadAll);
     menu.querySelector('.ep-title-in-filename').addEventListener('click', toggleEpTitleInFilename);
     menu.querySelector('.force-all-lang').addEventListener('click', toggleForceLang);
     menu.querySelector('.lang-setting').addEventListener('click', setLangToDownload);
@@ -252,9 +276,17 @@ const processMetadata = data => {
   const result = data.video;
   const {type, title} = result;
   if(type === 'show') {
+    batchAll = [];
+    batchSeason = [];
+    batchToEnd = [];
+    const allEpisodes = [];
+    let currentSeason = 0;
     menu.classList.add('series');
     for(const season of result.seasons) {
       for(const episode of season.episodes) {
+        if(episode.id === result.currentEpisode)
+          currentSeason = season.seq;
+        allEpisodes.push([season.seq, episode.seq, episode.id]);
         titleCache[episode.id] = {
           type, title,
           season: season.seq,
@@ -264,17 +296,33 @@ const processMetadata = data => {
         };
       }
     }
+
+    allEpisodes.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    let toEnd = false;
+    for(const [season, episode, id] of allEpisodes) {
+      batchAll.push(id);
+      if(season === currentSeason)
+        batchSeason.push(id);
+      if(id === result.currentEpisode)
+        toEnd = true;
+      if(toEnd)
+        batchToEnd.push(id);
+    }
   }
   else if(type === 'movie' || type === 'supplemental') {
     titleCache[result.id] = {type, title};
   }
   else {
   	console.debug('[Netflix Subtitle Downloader] unknown video type:', type, result)
+    return;
   }
+  checkSubsCache(menu);
 };
 
-const getXFromCache = (cache, name) => {
-  const id = window.location.pathname.split('/').pop();
+const getVideoId = () => window.location.pathname.split('/').pop();
+
+const getXFromCache = (cache, name, silent) => {
+  const id = getVideoId();
   if(cache.hasOwnProperty(id))
     return cache[id];
 
@@ -290,13 +338,18 @@ const getXFromCache = (cache, name) => {
   if(typeof newID !== 'undefined' && cache.hasOwnProperty(newID))
     return cache[newID];
 
+  if(silent === true)
+    return null;
+
   alert("Couldn't find the " + name + ". Wait until the player is loaded. If that doesn't help refresh the page.");
   throw '';
 };
 
-const getSubsFromCache = () => getXFromCache(subCache, 'subs');
+const getSubsFromCache = silent => getXFromCache(subCache, 'subs', silent);
 
 const pad = (number, letter) => `${letter}${number.toString().padStart(2, '0')}`;
+
+const safeTitle = title => title.trim().replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.');
 
 const getTitleFromCache = () => {
   const title = getXFromCache(titleCache, 'title');
@@ -313,7 +366,7 @@ const getTitleFromCache = () => {
         titleParts.push(title.subtitle);
     }
   }
-  return titleParts.join('.').trim().replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.');
+  return [safeTitle(titleParts.join('.')), safeTitle(title.title)];
 };
 
 const pickFormat = formats => {
@@ -335,7 +388,7 @@ const _save = async (_zip, title) => {
 
 const _download = async _zip => {
   const subs = getSubsFromCache();
-  const title = getTitleFromCache();
+  const [title, seriesTitle] = getTitleFromCache();
   const downloaded = [];
 
   let filteredLangs;
@@ -399,7 +452,7 @@ const _download = async _zip => {
     stop = true;
   progress.destroy();
 
-  return [title, stop];
+  return [seriesTitle, stop];
 };
 
 const downloadThis = async () => {
@@ -408,19 +461,77 @@ const downloadThis = async () => {
   _save(_zip, title);
 };
 
-/*const downloadAll = async () => {
-  zip = zip || new JSZip();
-  batch = true;
-  const [title, stop] = await _download(zip);
-  const nextEp = document.querySelector(NEXT_EPISODE);
-  if(!stop && nextEp)
-    nextEp.click();
-  else {
-    await _save(zip, title);
-    zip = undefined;
-    batch = false;
+const cleanBatch = async () => {
+  setBatch(null);
+  return;
+  const cache = await caches.open('NSD');
+  cache.delete('/subs.zip');
+  await caches.delete('NSD');
+}
+
+const readAsBinaryString = blob => new Promise(resolve => {
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    resolve(event.target.result);
+  };
+  reader.readAsBinaryString(blob);
+});
+
+const downloadBatch = async auto => {
+  const cache = await caches.open('NSD');
+  let zip, title, stop;
+  if(auto === true) {
+    try {
+      const response = await cache.match('/subs.zip');
+      const blob = await response.blob();
+      zip = await JSZip.loadAsync(await readAsBinaryString(blob));
+    }
+    catch(error) {
+      console.error(error);
+      alert('An error occured when loading the zip file with subs from the cache. More info in the browser console.');
+      await cleanBatch();
+      return;
+    }
   }
-};*/
+  else
+    zip = new JSZip();
+
+  try {
+    [title, stop] = await _download(zip);
+  }
+  catch(error) {
+    title = 'unknown';
+		stop = true;
+  }
+
+  const id = parseInt(getVideoId());
+  batch = batch.filter(x => x !== id);
+
+  if(stop || batch.length == 0) {
+    await _save(zip, title);
+    await cleanBatch();
+  }
+  else {
+    setBatch(batch);
+    cache.put('/subs.zip', new Response(await zip.generateAsync({type:'blob'})));
+    window.location = window.location.origin + '/watch/' + batch[0];
+  }
+};
+
+const downloadAll = () => {
+  batch = batchAll;
+  downloadBatch();
+};
+
+const downloadSeason = () => {
+  batch = batchSeason;
+  downloadBatch();
+};
+
+const downloadToEnd = () => {
+  batch = batchToEnd;
+  downloadBatch();
+};
 
 const processMessage = e => {
   const {type, data} = e.detail;

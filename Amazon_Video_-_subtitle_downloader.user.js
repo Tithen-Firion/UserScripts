@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.8.8
+// @version     1.9.0
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/(www|smile)\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/(www|smile)\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -73,38 +73,102 @@ s.innerHTML = 'p.download:hover { cursor:pointer }';
 document.head.appendChild(s);
 
 // XML to SRT
+function parseTTMLLine(line, parentStyle, styles) {
+  const topStyle = line.getAttribute('style') || parentStyle;
+  let prefix = '';
+  let suffix = '';
+  if(topStyle !== null) {
+    if(styles[topStyle][0]) {
+      prefix = '<i>';
+      suffix = '</i>';
+    }
+    if(styles[topStyle][1]) {
+      prefix += '<b>';
+      suffix = '</b>' + suffix;
+    }
+  }
+
+  let result = '';
+
+  for(const node of line.childNodes) {
+    if(node.nodeType === Node.ELEMENT_NODE) {
+      const tagName = node.tagName.split(':').pop().toUpperCase();
+      if(tagName === 'BR') {
+        result += '\n';
+      }
+      else if(tagName === 'SPAN') {
+        result += parseTTMLLine(node, topStyle, styles);
+      }
+      else {
+        console.log('unknown node:', node);
+        throw 'unknown node';
+      }
+    }
+    else if(node.nodeType === Node.TEXT_NODE) {
+      result += prefix + node.textContent + suffix;
+    }
+  }
+
+  return result;
+}
 function xmlToSrt(xmlString, lang) {
-  xmlString = xmlString.replace(/[ \t]*<(?:tt:)?br\s*\/>[ \t]*/gi, '\n');
-  xmlString = xmlString.replace(/<\/?span\s*(?:[^>]+)?>/gi, '');
   try {
     let parser = new DOMParser();
     var xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+
+    const styles = {};
+    for(const style of xmlDoc.querySelectorAll('head styling style')) {
+      const id = style.getAttribute('xml:id');
+      if(id === null) throw "style ID not found";
+      const italic = style.getAttribute('tts:fontStyle') === 'italic';
+      const bold = style.getAttribute('tts:fontWeight') === 'bold';
+      styles[id] = [italic, bold];
+    }
+
+    const regionsTop = {};
+    for(const style of xmlDoc.querySelectorAll('head layout region')) {
+      const id = style.getAttribute('xml:id');
+      if(id === null) throw "style ID not found";
+      const origin = style.getAttribute('tts:origin');
+      const position = parseInt(origin.match(/\s(\d+)%/)[1]);
+      regionsTop[id] = position < 50;
+    }
+
+    const topStyle = xmlDoc.querySelector('body').getAttribute('style');
+
+    console.log(topStyle, styles, regionsTop);
+
+    const lines = [];
+    const textarea = document.createElement('textarea');
+
+    let i = 0;
+    for(const line of xmlDoc.querySelectorAll('body p')) {
+      let parsedLine = parseTTMLLine(line, topStyle, styles);
+      if(parsedLine != '') {
+        if(lang.indexOf('ar') == 0)
+          parsedLine = parsedLine.replace(/^(?!\u202B|\u200F)/gm, '\u202B');
+
+        textarea.innerHTML = parsedLine;
+        parsedLine = textarea.value;
+
+        const region = line.getAttribute('region');
+        if(regionsTop[region] === true) {
+          parsedLine = '{\an8}' + parsedLine;
+        }
+
+        lines.push(++i);
+        lines.push((line.getAttribute('begin') + ' --> ' + line.getAttribute('end')).replace('.',','));
+        lines.push(parsedLine);
+        lines.push('');
+      }
+    }
+    return lines.join('\n');
   }
   catch(e) {
     console.error(e);
-    alert('Failed to parse XML subtitle file');
+    alert('Failed to parse XML subtitle file, see browser console for more details');
     return null;
   }
-  var lines = xmlDoc.querySelectorAll('body p');
-  var srtLines = [];
-
-  const textarea = document.createElement('textarea');
-  for(let i=0, l=lines.length; i < l; ++i) {
-    let text = lines[i].innerHTML.trim();
-    if(text != '') {
-      if(lang.indexOf('ar') == 0)
-        text = text.replace(/^(?!\u202B|\u200F)/gm, '\u202B');
-
-      textarea.innerHTML = text;
-      text = textarea.value;
-
-      srtLines.push(i+1);
-      srtLines.push(lines[i].getAttribute('begin').replace('.',',') + ' --> ' + lines[i].getAttribute('end').replace('.',','));
-      srtLines.push(text);
-      srtLines.push('');
-    }
-  }
-  return srtLines.join('\n');
 }
 
 // download subs and save them
@@ -116,6 +180,10 @@ function downloadSubs(url, title, downloadVars, lang) {
 
     progressBar.increment();
     var srt = xmlToSrt(resp.responseText, lang);
+    if(srt === null) {
+      srt = resp.responseText;
+      title = title.replace(/\.[^\.]+$/, '.ttml2');
+    }
     if(downloadVars) {
       downloadVars.zip.file(title, srt);
       --downloadVars.subCounter;

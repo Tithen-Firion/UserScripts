@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     4.1.0
+// @version     4.2.0
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -82,6 +82,7 @@ const DOWNLOAD_MENU = `
 <li class="download-all series">Download subs for all seasons</li>
 <li class="ep-title-in-filename">Add episode title to filename: <span></span></li>
 <li class="force-all-lang">Force Netflix to show all languages: <span></span></li>
+<li class="pref-locale">Preferred locale: <span></span></li>
 <li class="lang-setting">Languages to download: <span></span></li>
 <li class="sub-format">Subtitle format: prefer <span></span></li>
 </ol>
@@ -141,6 +142,7 @@ let batchToEnd = null;
 
 let epTitleInFilename = localStorage.getItem('NSD_ep-title-in-filename') === 'true';
 let forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
+let prefLocale = localStorage.getItem('NSD_pref-locale') || '';
 let langs = localStorage.getItem('NSD_lang-setting') || '';
 let subFormat = localStorage.getItem('NSD_sub-format') || WEBVTT;
 
@@ -149,6 +151,9 @@ const setEpTitleInFilename = () => {
 };
 const setForceText = () => {
   document.querySelector('#subtitle-downloader-menu .force-all-lang > span').innerHTML = (forceSubs ? 'on' : 'off');
+};
+const setLocaleText = () => {
+  document.querySelector('#subtitle-downloader-menu .pref-locale > span').innerHTML = (prefLocale === '' ? 'disabled' : prefLocale);
 };
 const setLangsText = () => {
   document.querySelector('#subtitle-downloader-menu .lang-setting > span').innerHTML = (langs === '' ? 'all' : langs);
@@ -179,6 +184,17 @@ const toggleForceLang = () => {
   else
     localStorage.setItem('NSD_force-all-lang', forceSubs);
   document.location.reload();
+};
+const setPreferredLocale = () => {
+  const result = prompt('Netflix limited "force all subtitles" usage. Now you have to set a preferred locale to show subtitles for that language.\nPossible values (you can enter only one at a time!):\nar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, pt-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh', prefLocale);
+  if(result !== null) {
+    prefLocale = result;
+    if(prefLocale === '')
+      localStorage.removeItem('NSD_pref-locale');
+    else
+      localStorage.setItem('NSD_pref-locale', prefLocale);
+    document.location.reload();
+  }
 };
 const setLangToDownload = () => {
   const result = prompt('Languages to download, comma separated. Leave empty to download all subtitles.\nExample: en,de,fr', langs);
@@ -262,10 +278,12 @@ const processMetadata = data => {
     menu.querySelector('.download-all').addEventListener('click', downloadAll);
     menu.querySelector('.ep-title-in-filename').addEventListener('click', toggleEpTitleInFilename);
     menu.querySelector('.force-all-lang').addEventListener('click', toggleForceLang);
+    menu.querySelector('.pref-locale').addEventListener('click', setPreferredLocale);
     menu.querySelector('.lang-setting').addEventListener('click', setLangToDownload);
     menu.querySelector('.sub-format').addEventListener('click', setSubFormat);
     setEpTitleInFilename();
     setForceText();
+    setLocaleText();
     setLangsText();
     setFormatText();
   }
@@ -547,6 +565,7 @@ const injection = () => {
   const WEBVTT = 'webvtt-lssdh-ios8';
   const MANIFEST_PATTERN = new RegExp('manifest|licensedManifest');
   const forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
+  const prefLocale = localStorage.getItem('NSD_pref-locale') || '';
 
   // hide the menu when we go back to the browse list
   window.addEventListener('popstate', () => {
@@ -580,6 +599,8 @@ const injection = () => {
               v.profiles.unshift(WEBVTT);
             if (v.showAllSubDubTracks != null && forceSubs)
               v.showAllSubDubTracks = true;
+            if (prefLocale !== '')
+              v.preferredTextLocale = prefLocale;
           }
           catch (e) {
             if (e instanceof TypeError)

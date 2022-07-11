@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.9.2
+// @version     1.9.3
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/(www|smile)\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/(www|smile)\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -77,15 +77,20 @@ function parseTTMLLine(line, parentStyle, styles) {
   const topStyle = line.getAttribute('style') || parentStyle;
   let prefix = '';
   let suffix = '';
+  let italic = line.getAttribute('tts:fontStyle') === 'italic';
+  let bold = line.getAttribute('tts:fontWeight') === 'bold';
   if(topStyle !== null) {
-    if(styles[topStyle][0]) {
-      prefix = '<i>';
-      suffix = '</i>';
-    }
-    if(styles[topStyle][1]) {
-      prefix += '<b>';
-      suffix = '</b>' + suffix;
-    }
+    italic = italic || styles[topStyle][0];
+    bold = bold || styles[topStyle][1];
+  }
+
+  if(italic) {
+    prefix = '<i>';
+    suffix = '</i>';
+  }
+  if(bold) {
+    prefix += '<b>';
+    suffix = '</b>' + suffix;
   }
 
   let result = '';
@@ -171,6 +176,10 @@ function xmlToSrt(xmlString, lang) {
   }
 }
 
+function sanitizeTitle(title) {
+  return title.replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.');
+}
+
 // download subs and save them
 function downloadSubs(url, title, downloadVars, lang) {
   GM.xmlHttpRequest({
@@ -190,7 +199,7 @@ function downloadSubs(url, title, downloadVars, lang) {
       if((downloadVars.subCounter|downloadVars.infoCounter) === 0)
         downloadVars.zip.generateAsync({type:"blob"})
           .then(function(content) {
-            saveAs(content, 'subs.zip');
+            saveAs(content, sanitizeTitle(downloadVars.title) + '.zip');
             progressBar.destroy();
           });
     }
@@ -215,8 +224,10 @@ function downloadInfo(url, downloadVars) {
     var epInfo = info.catalogMetadata.catalog;
     var ep = epInfo.episodeNumber;
     var title, season;
-    if(epInfo.type == 'MOVIE' || ep === 0)
+    if(epInfo.type == 'MOVIE' || ep === 0) {
       title = epInfo.title;
+      downloadVars.title = title;
+    }
     else {
       info.catalogMetadata.family.tvAncestors.forEach(function(tvAncestor) {
         switch(tvAncestor.catalog.type) {
@@ -228,10 +239,15 @@ function downloadInfo(url, downloadVars) {
             break;
         }
       });
-      title += '.S' + season.toString().padStart(2, '0') + '.E' + ep.toString().padStart(2, '0');
+      title += '.S' + season.toString().padStart(2, '0');
+      if(downloadVars.type === 'all')
+        downloadVars.title = title;
+      title += 'E' + ep.toString().padStart(2, '0');
+      if(downloadVars.type === 'one')
+        downloadVars.title = title;
       title += '.' + epInfo.title;
     }
-    title = title.replace(/[:*?"<>|\\\/]+/g, '_').replace(/ /g, '.');
+    title = sanitizeTitle(title);
     title += '.WEBRip.Amazon.';
     var languages = new Set();
 
@@ -279,6 +295,7 @@ function downloadThis(e) {
   progressBar.init();
   var id = e.target.getAttribute('data-id');
   var downloadVars = {
+    type: 'one',
     subCounter: 0,
     infoCounter: 1,
     zip: new JSZip()
@@ -289,6 +306,7 @@ function downloadAll(e) {
   progressBar.init();
   var IDs = e.target.getAttribute('data-id').split(';');
   var downloadVars = {
+    type: 'all',
     subCounter: 0,
     infoCounter: IDs.length,
     zip: new JSZip()

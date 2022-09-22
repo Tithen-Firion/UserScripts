@@ -2,7 +2,7 @@
 // @name        iTunes - subtitle downloader
 // @description Allows you to download subtitles from iTunes
 // @license     MIT
-// @version     1.3.6
+// @version     1.3.7
 // @namespace   tithen-firion.github.io
 // @include     https://itunes.apple.com/*/movie/*
 // @include     https://tv.apple.com/*/movie/*
@@ -230,10 +230,9 @@ const parsers = {
   'tv.apple.com': data => {
     for(const value of Object.values(data)) {
       try{
-        const data2 = JSON.parse(value).d.data;
-        const content = data2.content;
+        const content = value.content;
         if(content.type === 'Movie') {
-          const playables = content.playables || data2.playables;
+          const playables = content.playables || value.playables;
           const playable = playables[Object.keys(playables)[0]];
           let url;
           try {
@@ -252,7 +251,7 @@ const parsers = {
           const episode = content.episodeNumber.toString().padStart(2, '0');
           return [
             `${content.showTitle} S${season}E${episode}`,
-            Object.values(data2.playables)[0].assets.hlsUrl
+            Object.values(value.playables)[0].assets.hlsUrl
           ];
         }
         

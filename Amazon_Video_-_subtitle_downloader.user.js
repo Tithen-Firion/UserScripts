@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.9.3
+// @version     1.9.4
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/(www|smile)\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/(www|smile)\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -79,9 +79,11 @@ function parseTTMLLine(line, parentStyle, styles) {
   let suffix = '';
   let italic = line.getAttribute('tts:fontStyle') === 'italic';
   let bold = line.getAttribute('tts:fontWeight') === 'bold';
+  let ruby = line.getAttribute('tts:ruby') === 'text';
   if(topStyle !== null) {
     italic = italic || styles[topStyle][0];
     bold = bold || styles[topStyle][1];
+    ruby = ruby || styles[topStyle][2];
   }
 
   if(italic) {
@@ -91,6 +93,10 @@ function parseTTMLLine(line, parentStyle, styles) {
   if(bold) {
     prefix += '<b>';
     suffix = '</b>' + suffix;
+  }
+  if(ruby) {
+    prefix += '(';
+    suffix = ')' + suffix;
   }
 
   let result = '';
@@ -127,7 +133,8 @@ function xmlToSrt(xmlString, lang) {
       if(id === null) throw "style ID not found";
       const italic = style.getAttribute('tts:fontStyle') === 'italic';
       const bold = style.getAttribute('tts:fontWeight') === 'bold';
-      styles[id] = [italic, bold];
+      const ruby = style.getAttribute('tts:ruby') === 'text';
+      styles[id] = [italic, bold, ruby];
     }
 
     const regionsTop = {};

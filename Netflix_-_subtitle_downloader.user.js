@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     4.2.0
+// @version     4.2.1
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -230,6 +230,7 @@ const popRandomElement = arr => {
 const processSubInfo = async result => {
   const tracks = result.timedtexttracks;
   const subs = {};
+  let reportError = True;
   for(const track of tracks) {
     if(track.isNoneTrack)
       continue;
@@ -241,8 +242,23 @@ const processSubInfo = async result => {
 
     const formats = {};
     for(let format of ALL_FORMATS) {
-      if(typeof track.ttDownloadables[format] !== 'undefined')
-        formats[format] = [Object.values(track.ttDownloadables[format].downloadUrls), EXTENSIONS[format]];
+      const downloadables = track.ttDownloadables[format];
+      if(typeof downloadables !== 'undefined') {
+        let urls;
+        if(typeof downloadables.downloadUrls !== 'undefined')
+          urls = Object.values(downloadables.downloadUrls);
+        else if(typeof downloadables.urls !== 'undefined')
+          urls = downloadables.urls.map(({url}) => url);
+        else {
+          console.log('processSubInfo:', lang, Object.keys(downloadables));
+          if(reportError) {
+            reportError = false;
+            alert("Can't find subtitle URL, check the console for more information!");
+	  }
+          continue;
+        }
+        formats[format] = [urls, EXTENSIONS[format]];
+      }
     }
 
     if(Object.keys(formats).length > 0)

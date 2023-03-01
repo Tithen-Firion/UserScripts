@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.9.5
+// @version     1.9.6
 // @namespace   tithen-firion.github.io
 // @include     /^https:\/\/(www|smile)\.amazon\.com\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
 // @include     /^https:\/\/(www|smile)\.amazon\.de\/(gp\/(video|product)|(.*?\/)?dp)\/.+/
@@ -397,7 +397,7 @@ async function init(url) {
   await showAll();
 
   let button;
-  let epElems = document.querySelectorAll('.dv-episode-container, .avu-context-card, .js-node-episode-container');
+  let epElems = document.querySelectorAll('.dv-episode-container, .avu-context-card, .js-node-episode-container, li[id^=av-ep-episodes-]');
   if(epElems.length > 0) {
     let IDs = [];
     for(let i=epElems.length; i--; ) {

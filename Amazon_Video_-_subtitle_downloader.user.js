@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.9.8
+// @version     1.9.9
 // @namespace   tithen-firion.github.io
 // @match       https://*.amazon.com/*
 // @match       https://*.amazon.de/*
@@ -69,7 +69,15 @@ var progressBar = new ProgressBar();
 
 // add CSS style
 var s = document.createElement('style');
-s.innerHTML = 'p.download:hover { cursor:pointer }';
+s.innerHTML = `
+p.download {
+  text-align: center;
+  grid-column: 1/-1;
+}
+p.download:hover {
+  cursor: pointer;
+}
+`;
 document.head.appendChild(s);
 
 // XML to SRT

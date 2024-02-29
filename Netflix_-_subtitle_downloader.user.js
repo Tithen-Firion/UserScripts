@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     4.2.2
+// @version     4.2.3
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -261,8 +261,15 @@ const processSubInfo = async result => {
       }
     }
 
-    if(Object.keys(formats).length > 0)
-      subs[lang] = formats;
+    if(Object.keys(formats).length > 0) {
+      for(let i = 0; ; ++i) {
+        const langKey = lang + (i == 0 ? "" : `-${i}`);
+        if(typeof subs[langKey] === "undefined") {
+          subs[langKey] = formats;
+          break;
+        }
+      }
+    }
   }
   subCache[result.movieId] = subs;
 };

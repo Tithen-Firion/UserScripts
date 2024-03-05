@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.9.10
+// @version     1.9.11
 // @namespace   tithen-firion.github.io
 // @match       https://*.amazon.com/*
 // @match       https://*.amazon.de/*
@@ -361,7 +361,20 @@ function createDownloadButton(id, type) {
   return p;
 }
 
+function getArgs(a) {
+  return a.initArgs || a.args;
+}
+
 function findMovieID() {
+  let movieId;
+  try {
+    movieId = document.querySelector('input[name="titleID"]').value;
+    if(typeof movieId !== "undefined") {
+      return movieId;
+    }
+  }
+  catch(ignore) {}
+
   for(const templateElement of document.querySelectorAll('script[type="text/template"]')) {
     let data;
     try {
@@ -370,18 +383,25 @@ function findMovieID() {
     catch(ignore) {
       continue;
     }
-    let args = data.initArgs || data.args;
-    if(typeof args !== 'undefined' && typeof args.titleID !== 'undefined')
-      return args.titleID;
-    try {
-      data = data.props.body[0];
+
+    for(let i = 0; i < 3; ++i) {
+      try {
+        if(i === 0) {
+          movieId = getArgs(getArgs(data).apexes[0]).titleID;
+        }
+        else if(i === 1) {
+          movieId = getArgs(data).titleID;
+        }
+        else if(i === 2) {
+          movieId = getArgs(data.props.body[0]).titleID;
+        }
+
+        if(typeof movieId !== "undefined") {
+          return movieId;
+        }
+      }
+      catch(ignore) {}
     }
-    catch(ignore) {
-      continue;
-    }
-    args = data.initArgs || data.args;
-    if(typeof args !== 'undefined' && typeof args.titleID !== 'undefined')
-      return args.titleID;
   }
   throw Error("Couldn't find movie ID");
 }

@@ -2,7 +2,7 @@
 // @name        iTunes - subtitle downloader
 // @description Allows you to download subtitles from iTunes
 // @license     MIT
-// @version     1.3.8
+// @version     1.3.9
 // @namespace   tithen-firion.github.io
 // @include     https://itunes.apple.com/*/movie/*
 // @include     https://tv.apple.com/*/movie/*
@@ -226,35 +226,56 @@ function findUrl(included) {
   return null;
 }
 
+function findUrl2(playables) {
+  for(const playable of Object.values(playables)) {
+    let url;
+    try {
+      url = playable.itunesMediaApiData.offers[0].hlsUrl;
+    }
+    catch(ignore) {
+      try {
+        url = playable.assets.hlsUrl;
+      }
+      catch(ignore) {
+        continue;
+      }
+    }
+
+    return [
+      playable.title,
+      url
+    ];
+  }
+  return [null, null];
+}
+
 const parsers = {
   'tv.apple.com': data => {
     for(const value of Object.values(data)) {
       try{
         const content = value.content;
+        let playables = null;
+        let title = null;
+        let title2 = null;
+        let url = null;
         if(content.type === 'Movie') {
-          const playables = content.playables || value.playables;
-          const playable = playables[Object.keys(playables)[0]];
-          let url;
-          try {
-          	url = playable.itunesMediaApiData.offers[0].hlsUrl;
-          }
-          catch(ignore) {
-          	url = playable.assets.hlsUrl;
-          }
-          return [
-            playable.title,
-            url
-          ];
+          playables = content.playables || value.playables;
         }
         else if(content.type === 'Episode') {
+          playables = value.playables;
           const season = content.seasonNumber.toString().padStart(2, '0');
           const episode = content.episodeNumber.toString().padStart(2, '0');
-          return [
-            `${content.showTitle} S${season}E${episode}`,
-            Object.values(value.playables)[0].assets.hlsUrl
-          ];
+          title = `${content.showTitle} S${season}E${episode}`;
+        }
+        else {
+          throw "???";
         }
         
+        [title2, url] = findUrl2(playables);
+        return [
+          title || title2,
+          url
+        ];
       }
       catch(ignore){}
     }

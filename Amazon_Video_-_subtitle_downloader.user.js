@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.9.12
+// @version     1.9.13
 // @namespace   tithen-firion.github.io
 // @match       https://*.amazon.com/*
 // @match       https://*.amazon.de/*
@@ -170,6 +170,7 @@ function xmlToSrt(xmlString, lang) {
 
         textarea.innerHTML = parsedLine;
         parsedLine = textarea.value;
+        parsedLine = parsedLine.replace(/\n{2,}/g, '\n');
 
         const region = line.getAttribute('region');
         if(regionsTop[region] === true) {

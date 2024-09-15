@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     4.2.3
+// @version     4.2.4
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -85,6 +85,7 @@ const DOWNLOAD_MENU = `
 <li class="pref-locale">Preferred locale: <span></span></li>
 <li class="lang-setting">Languages to download: <span></span></li>
 <li class="sub-format">Subtitle format: prefer <span></span></li>
+<li class="batch-delay">Batch delay: <span></span></li>
 </ol>
 `;
 
@@ -145,6 +146,7 @@ let forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
 let prefLocale = localStorage.getItem('NSD_pref-locale') || '';
 let langs = localStorage.getItem('NSD_lang-setting') || '';
 let subFormat = localStorage.getItem('NSD_sub-format') || WEBVTT;
+let batchDelay = parseFloat(localStorage.getItem('NSD_batch-delay') || '0');
 
 const setEpTitleInFilename = () => {
   document.querySelector('#subtitle-downloader-menu .ep-title-in-filename > span').innerHTML = (epTitleInFilename ? 'on' : 'off');
@@ -160,6 +162,9 @@ const setLangsText = () => {
 };
 const setFormatText = () => {
   document.querySelector('#subtitle-downloader-menu .sub-format > span').innerHTML = FORMAT_NAMES[subFormat];
+};
+const setBatchDelayText = () => {
+  document.querySelector('#subtitle-downloader-menu .batch-delay > span').innerHTML = batchDelay;
 };
 
 const setBatch = b => {
@@ -217,6 +222,20 @@ const setSubFormat = () => {
     subFormat = WEBVTT;
   }
   setFormatText();
+};
+const setBatchDelay = () => {
+  let result = prompt('Delay (in seconds) between switching pages when downloading subs in batch:', batchDelay);
+  if(result !== null) {
+    result = parseFloat(result.replace(',', '.'));
+    if(result < 0 || !Number.isFinite(result))
+      result = 0;
+    batchDelay = result;
+    if(batchDelay == 0)
+      localStorage.removeItem('NSD_batch-delay');
+    else
+      localStorage.setItem('NSD_batch-delay', batchDelay);
+    setBatchDelayText();
+  }
 };
 
 const asyncSleep = (seconds, value) => new Promise(resolve => {
@@ -304,6 +323,7 @@ const processMetadata = data => {
     menu.querySelector('.pref-locale').addEventListener('click', setPreferredLocale);
     menu.querySelector('.lang-setting').addEventListener('click', setLangToDownload);
     menu.querySelector('.sub-format').addEventListener('click', setSubFormat);
+    menu.querySelector('.batch-delay').addEventListener('click', setBatchDelay);
     setEpTitleInFilename();
     setForceText();
     setLocaleText();
@@ -555,6 +575,7 @@ const downloadBatch = async auto => {
   else {
     setBatch(batch);
     cache.put('/subs.zip', new Response(await zip.generateAsync({type:'blob'})));
+    await asyncSleep(batchDelay);
     window.location = window.location.origin + '/watch/' + batch[0];
   }
 };

@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.9.13
+// @version     1.9.14
 // @namespace   tithen-firion.github.io
 // @match       https://*.amazon.com/*
 // @match       https://*.amazon.de/*
@@ -412,7 +412,7 @@ function findMovieID() {
 }
 
 function allLoaded(resolve, epCount) {
-  if(epCount !== document.querySelectorAll('.js-node-episode-container, li[id^=av-ep-episodes-]').length)
+  if(epCount !== document.querySelectorAll('.js-node-episode-container, li[id^=av-ep-episodes-], li[id^=av-ep-episode-]').length)
     resolve();
   else
     window.setTimeout(allLoaded, 200, resolve, epCount);
@@ -424,7 +424,7 @@ function showAll() {
     if(btn === null)
       resolve();
 
-    let epCount = document.querySelectorAll('.js-node-episode-container, li[id^=av-ep-episodes-]').length;
+    let epCount = document.querySelectorAll('.js-node-episode-container, li[id^=av-ep-episodes-], li[id^=av-ep-episode-]').length;
     btn.click();
     allLoaded(resolve, epCount);
   });
@@ -439,7 +439,7 @@ async function init(url) {
   await showAll();
 
   let button;
-  let epElems = document.querySelectorAll('.dv-episode-container, .avu-context-card, .js-node-episode-container, li[id^=av-ep-episodes-]');
+  let epElems = document.querySelectorAll('.dv-episode-container, .avu-context-card, .js-node-episode-container, li[id^=av-ep-episodes-], li[id^=av-ep-episode-]');
   if(epElems.length > 0) {
     let IDs = [];
     for(let i=epElems.length; i--; ) {

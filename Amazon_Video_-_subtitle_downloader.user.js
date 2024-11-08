@@ -2,7 +2,7 @@
 // @name        Amazon Video - subtitle downloader
 // @description Allows you to download subtitles from Amazon Video
 // @license     MIT
-// @version     1.9.14
+// @version     1.9.15
 // @namespace   tithen-firion.github.io
 // @match       https://*.amazon.com/*
 // @match       https://*.amazon.de/*
@@ -418,8 +418,37 @@ function allLoaded(resolve, epCount) {
     window.setTimeout(allLoaded, 200, resolve, epCount);
 }
 
+function manualShowAll(resolve) {
+  alert(
+    "Some episodes are not loaded yet! Scroll to the bottom of the page to load them."
+    + "\n\n"
+    + "Once all episodes are loaded - click on the button at the bottom of your screen."
+  );
+  const btn = document.createElement("div");
+  btn.innerHTML = "Click here after all episodes load";
+  btn.style.position = "fixed";
+  btn.style.bottom = "0";
+  btn.style.left = "0";
+  btn.style.padding = "10px";
+  btn.style.zIndex = "999999";
+  btn.style.background = "white";
+  btn.addEventListener("click", () => {
+    btn.remove();
+    resolve();
+  });
+  document.body.append(btn);
+}
+
 function showAll() {
   return new Promise(resolve => {
+    for(const templateElement of document.querySelectorAll('script[type="text/template"]')) {
+      let data;
+      if(templateElement.innerHTML.includes("NextPage")) {
+        manualShowAll(resolve);
+        return;
+      }
+    }
+
     let btn = document.querySelector('[data-automation-id="ep-expander"]');
     if(btn === null)
       resolve();

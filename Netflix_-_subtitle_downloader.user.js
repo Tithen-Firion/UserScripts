@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     4.2.6
+// @version     4.2.7
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -62,16 +62,19 @@ const STOP_THE_DOWNLOAD = 'NETFLIX_SUBTITLE_DOWNLOADER_STOP_THE_DOWNLOAD';
 const WEBVTT = 'webvtt-lssdh-ios8';
 const DFXP = 'dfxp-ls-sdh';
 const SIMPLE = 'simplesdh';
-const ALL_FORMATS = [WEBVTT, DFXP, SIMPLE];
+const IMSC1_1 = 'imsc1.1';
+const ALL_FORMATS = [IMSC1_1, DFXP, WEBVTT, SIMPLE];
+const ALL_FORMATS_prefer_vtt = [WEBVTT, IMSC1_1, DFXP, SIMPLE];
 
 const FORMAT_NAMES = {};
 FORMAT_NAMES[WEBVTT] = 'WebVTT';
-FORMAT_NAMES[DFXP] = 'DFXP/XML';
+FORMAT_NAMES[DFXP] = 'IMSC1.1/DFXP/XML';
 
 const EXTENSIONS = {};
 EXTENSIONS[WEBVTT] = 'vtt';
 EXTENSIONS[DFXP] = 'dfxp';
 EXTENSIONS[SIMPLE] = 'xml';
+EXTENSIONS[IMSC1_1] = 'xml';
 
 const DOWNLOAD_MENU = `
 <ol>
@@ -432,9 +435,7 @@ const getTitleFromCache = () => {
 };
 
 const pickFormat = formats => {
-  const preferred = ALL_FORMATS.slice();
-  if(subFormat === DFXP)
-    preferred.push(preferred.shift());
+  const preferred = (subFormat === DFXP ? ALL_FORMATS : ALL_FORMATS_prefer_vtt);
 
   for(let format of preferred) {
     if(typeof formats[format] !== 'undefined')
@@ -606,8 +607,7 @@ const processMessage = e => {
     processMetadata(data);
 }
 
-const injection = () => {
-  const WEBVTT = 'webvtt-lssdh-ios8';
+const injection = (ALL_FORMATS) => {
   const MANIFEST_PATTERN = new RegExp('manifest|licensedManifest');
   const forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
   const prefLocale = localStorage.getItem('NSD_pref-locale') || '';
@@ -640,8 +640,13 @@ const injection = () => {
       if (data && typeof data.url === 'string' && data.url.search(MANIFEST_PATTERN) > -1) {
         for (let v of Object.values(data)) {
           try {
-            if (v.profiles)
-              v.profiles.unshift(WEBVTT);
+            if (v.profiles) {
+              for(const profile_name of ALL_FORMATS) {
+                if(!v.profiles.includes(profile_name)) {
+                  v.profiles.unshift(profile_name);
+                }
+              }
+            }
             if (v.showAllSubDubTracks != null && forceSubs)
               v.showAllSubDubTracks = true;
             if (prefLocale !== '')
@@ -685,7 +690,7 @@ window.addEventListener('netflix_sub_downloader_data', processMessage, false);
 
 // inject script
 const sc = document.createElement('script');
-sc.innerHTML = '(' + injection.toString() + ')()';
+sc.innerHTML = '(' + injection.toString() + ')(' + JSON.stringify(ALL_FORMATS) + ')';
 document.head.appendChild(sc);
 document.head.removeChild(sc);
 

@@ -60,3 +60,18 @@ xhrHijacker(function(xhr, id, origin, args) {
   }
 });
 ```
+
+# Links for testing
+
+Links to free stuff so I don't have to search for them over and over again:
+
+## Free TV series
+https://www.amazon.de/gp/video/detail/B0CNDD43YH Tom Clancy's Jack Ryan  
+https://www.amazon.de/gp/video/detail/B09PQM5S8T Bosch: Legacy  
+https://www.amazon.de/gp/video/detail/B0D1GTMSP3 7 vs. Wild
+
+## Free movies (there's a whole category)
+https://www.amazon.de/gp/video/detail/B01HC649YM NO SUBTITLES: Android Cop  
+https://www.amazon.de/gp/video/detail/B09SB1522V AUTO GERMAN SUBS: Dark Crimes  
+https://www.amazon.de/gp/video/detail/B0CBD8B6LL Agent Cody Banks
+

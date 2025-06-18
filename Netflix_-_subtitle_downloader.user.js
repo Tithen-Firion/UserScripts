@@ -76,53 +76,429 @@ EXTENSIONS[DFXP] = 'dfxp';
 EXTENSIONS[SIMPLE] = 'xml';
 EXTENSIONS[IMSC1_1] = 'xml';
 
+const messages = {
+  'en': {
+      menuTitle: 'Netflix subtitle downloader',
+      menuDownload: 'Download subs for this',
+      menuEpisode: 'episode',
+      menuMovie: 'movie',
+      menuDownloadToEnd: 'Download subs from this ep till last available',
+      menuDownloadSeason: 'Download subs for this season',
+      menuDownloadAll: 'Download subs for all seasons',
+      menuEpTitleInFilename: 'Add episode title to filename:',
+      menuForceAllLang: 'Force Netflix to show all languages:',
+      menuPrefLocale: 'Preferred locale:',
+      menuLangSetting: 'Languages to download:',
+      menuSubFormat: 'Subtitle format: prefer',
+      menuBatchDelay: 'Batch delay:',
+      preferredLocalePrompt: 'Netflix limited "force all subtitles" usage. Now you have to set a preferred locale to show subtitles for that language.\nPossible values (you can enter only one at a time!):\n(ar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, pt-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh):',
+      downloadLangsPrompt: 'Languages to download, comma separated. Leave empty to download all subtitles.\n(Example: en,pt,pt-BR,fr):',
+      delayPrompt: 'Delay (in seconds) between switching pages when downloading subs in batch:',
+      subtitleUrlError: "Can't find subtitle URL, check the console for more information!",
+      subtitleNotFound: "Couldn't find the subtitles. Wait until the player is loaded. If that doesn't help, refresh the page.",
+      cacheZipError: "An error occured when loading the zip file with subs from the cache. More info in the browser console.",
+      on: 'on',
+      off: 'off',
+      all: 'all',
+      disabled: 'disabled'
+  },
+  'pt': {
+      menuTitle: 'Netflix subtitle downloader',
+      menuDownload: 'Transferir legendas para este',
+      menuEpisode: 'episódio',
+      menuMovie: 'filme',
+      menuDownloadToEnd: 'Transferir legendas deste episódio até ao último disponível',
+      menuDownloadSeason: 'Transferir legendas desta temporada',
+      menuDownloadAll: 'Transferir legendas de todas as temporadas',
+      menuEpTitleInFilename: 'Adicionar título do episódio ao nome do ficheiro:',
+      menuForceAllLang: 'Forçar a Netflix a mostrar todos os idiomas:',
+      menuPrefLocale: 'Local preferido:',
+      menuLangSetting: 'Idiomas a transferir:',
+      menuSubFormat: 'Formato das legendas: preferir',
+      menuBatchDelay: 'Atraso em lote:',
+      preferredLocalePrompt: 'A Netflix limitou a utilização de “forçar todas as legendas”. Agora tens de definir um local preferido para mostrar legendas para esse idioma.\nValores possíveis (só podes introduzir um de cada vez!):\n(ar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, pt-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh):',
+      downloadLangsPrompt: 'Idiomas a transferir, separados por vírgulas. Deixa em branco para transferir todas as legendas.\n(Exemplo: en,pt,pt-BR,fr):',
+      delayPrompt: 'Atraso (em segundos) entre a mudança de página quando transfere legendas em lote:',
+      subtitleUrlError: "Não foi possível encontrar o link das legendas. Verifica a consola para mais informações!",
+      subtitleNotFound: "Não foi possível encontrar as legendas. Espera até que o leitor seja carregado. Se isso não ajudar, atualiza a página.",
+      cacheZipError: "Ocorreu um erro ao carregar o ficheiro ZIP com as legendas da cache. Mais informações na consola do navegador.",
+      on: 'ligado',
+      off: 'desligado',
+      all: 'todas',
+      disabled: 'desativado'
+  },
+  'pt-BR': {
+      menuTitle: 'Netflix subtitle downloader',
+      menuDownload: 'Baixar legendas para este',
+      menuEpisode: 'episódio',
+      menuMovie: 'filme',
+      menuDownloadToEnd: 'Baixar legendas deste episódio até o último disponível',
+      menuDownloadSeason: 'Baixar legendas desta temporada',
+      menuDownloadAll: 'Baixar legendas de todas as temporadas',
+      menuEpTitleInFilename: 'Adicionar título do episódio ao nome do arquivo:',
+      menuForceAllLang: 'Forçar Netflix a mostrar todos os idiomas:',
+      menuPrefLocale: 'Local preferencial:',
+      menuLangSetting: 'Idiomas para baixar:',
+      menuSubFormat: 'Formato da legenda: preferir',
+      menuBatchDelay: 'Atraso em lote:',
+      preferredLocalePrompt: 'A Netflix limitou o uso da opção "forçar todas as legendas". Agora você precisa definir um local preferencial para exibir legendas nesse idioma.\nValores possíveis (você pode inserir apenas um de cada vez!):\n(ar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, pt-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh):',
+      downloadLangsPrompt: 'Idiomas para baixar, separados por vírgula. Deixe em branco para baixar todas as legendas.\n(Exemplo: en,pt,pt-BR,fr):',
+      delayPrompt: 'Atraso (em segundos) entre a troca de páginas ao baixar legendas em lote:',
+      subtitleUrlError: "Não foi possível encontrar o link das legendas. Verifique o console para mais informações!",
+      subtitleNotFound: "Não foi possível encontrar as legendas. Aguarde até que o player seja carregado. Se isso não ajudar, atualize a página.",
+      cacheZipError: "Ocorreu um erro ao carregar o arquivo ZIP com as legendas do cache. Mais informações no console do navegador.",
+      on: 'ligado',
+      off: 'desligado',
+      all: 'todas',
+      disabled: 'desativado'
+  },
+  'fr': {
+      menuTitle: 'Netflix subtitle downloader',
+      menuDownload: 'Télécharger les sous-titres pour cet(te)',
+      menuEpisode: 'épisode',
+      menuMovie: 'film',
+      menuDownloadToEnd: 'Télécharger les sous-titres de cet épisode jusqu\'au dernier disponible',
+      menuDownloadSeason: 'Télécharger les sous-titres de cette saison',
+      menuDownloadAll: 'Télécharger les sous-titres de toutes les saisons',
+      menuEpTitleInFilename: 'Ajouter le titre de l\'épisode au nom du fichier :',
+      menuForceAllLang: 'Forcer Netflix à afficher toutes les langues :',
+      menuPrefLocale: 'Locale préférée :',
+      menuLangSetting: 'Langues à télécharger :',
+      menuSubFormat: 'Format des sous-titres : préférence',
+      menuBatchDelay: 'Délai en lot :',
+      preferredLocalePrompt: 'Netflix a limité l\'utilisation de « forcer tous les sous-titres ». Tu dois maintenant définir une locale préférée pour afficher les sous-titres de cette langue.\nValeurs possibles (tu ne peux en saisir qu\'une seule à la fois !):\n(ar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, en-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh):',
+      downloadLangsPrompt: 'Langues à télécharger, séparées par des virgules. Laisse un blanc pour télécharger tous les sous-titres.\n(Exemple : en,pt,pt-BR,fr) :',
+      delayPrompt: 'Délai (en secondes) entre les changements de page lors du téléchargement de sous-titres par lot :',
+      subtitleUrlError: 'Impossible de trouver le lien des sous-titres. Vérifie la console pour plus d\'informations !',
+      subtitleNotFound: 'Impossible de trouver les sous-titres. Attends que le lecteur soit chargé. Si ça ne marche pas, actualise la page.',
+      cacheZipError: 'Une erreur est survenue lors du chargement du fichier ZIP contenant les sous-titres depuis le cache. Plus d\'infos dans la console du navigateur.',
+      on: 'activé',
+      off: 'désactivé',
+      all: 'toutes',
+      disabled: 'désactivé'
+  },
+  'de': {
+      menuTitle: 'Netflix subtitle downloader',
+      menuDownload: 'Untertitel für dieses herunterladen',
+      menuEpisode: 'Folge',
+      menuMovie: 'Film',
+      menuDownloadToEnd: 'Untertitel von dieser Folge bis zur letzten verfügbaren herunterladen',
+      menuDownloadSeason: 'Untertitel für diese Staffel herunterladen',
+      menuDownloadAll: 'Untertitel für alle Staffeln herunterladen',
+      menuEpTitleInFilename: 'Folgentitel zum Dateinamen hinzufügen:',
+      menuForceAllLang: 'Netflix zwingen, alle Sprachen anzuzeigen:',
+      menuPrefLocale: 'Bevorzugte Spracheinstellung:',
+      menuLangSetting: 'Sprachen zum Herunterladen:',
+      menuSubFormat: 'Untertitelformat: bevorzugt',
+      menuBatchDelay: 'Verzögerung bei Batch:',
+      preferredLocalePrompt: 'Netflix hat die Nutzung von "Alle Untertitel erzwingen" eingeschränkt. Du musst jetzt eine bevorzugte Sprache einstellen, um Untertitel für diese Sprache anzuzeigen.\nMögliche Werte (jeweils nur eine Eingabe möglich!):\n(ar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, pt-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh):',
+      downloadLangsPrompt: 'Zu ladende Sprachen, durch Kommas getrennt. Leer lassen, um alle Untertitel herunterzuladen.\n(Beispiel: en,pt,pt-BR,fr):',
+      delayPrompt: 'Verzögerung (in Sekunden) zwischen Seitenwechseln beim Herunterladen von Untertiteln im Batch:',
+      subtitleUrlError: 'Kann die Untertitel-URL nicht finden, siehe Konsole für weitere Informationen!',
+      subtitleNotFound: 'Untertitel konnten nicht gefunden werden. Warte, bis der Player geladen ist. Wenn das nicht hilft, lade die Seite neu.',
+      cacheZipError: 'Beim Laden der ZIP-Datei mit Untertiteln aus dem Cache ist ein Fehler aufgetreten. Weitere Infos in der Browser-Konsole.',
+      on: 'ein',
+      off: 'aus',
+      all: 'alle',
+      disabled: 'deaktiviert'
+  },
+  'ko': {
+      menuTitle: 'Netflix subtitle downloader',
+      menuDownload: '이 자막 다운로드',
+      menuEpisode: '에피소드',
+      menuMovie: '영화',
+      menuDownloadToEnd: '이 에피소드부터 마지막까지 자막 다운로드',
+      menuDownloadSeason: '이 시즌 자막 다운로드',
+      menuDownloadAll: '모든 시즌 자막 다운로드',
+      menuEpTitleInFilename: '파일명에 에피소드 제목 추가:',
+      menuForceAllLang: '넷플릭스에서 모든 언어 표시 강제:',
+      menuPrefLocale: '선호 지역 설정:',
+      menuLangSetting: '다운로드할 언어:',
+      menuSubFormat: '자막 형식: 선호',
+      menuBatchDelay: '일괄 처리 지연:',
+      preferredLocalePrompt: '넷플릭스는 "모든 자막 강제" 사용을 제한했습니다. 이제 해당 언어 자막을 표시하려면 선호 지역을 설정해야 합니다.\n가능한 값 (한 번에 하나씩 입력 가능):\n(ar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, pt-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh):',
+      downloadLangsPrompt: '다운로드할 언어를 쉼표로 구분하여 입력하세요. 모두 다운로드하려면 비워두세요.\n(예: en,pt,pt-BR,fr):',
+      delayPrompt: '일괄 다운로드 시 페이지 전환 간 지연 시간(초):',
+      subtitleUrlError: '자막 URL을 찾을 수 없습니다. 자세한 내용은 콘솔을 확인하세요!',
+      subtitleNotFound: '자막을 찾을 수 없습니다. 플레이어가 로드될 때까지 기다리세요. 그래도 안 되면 페이지를 새로 고침하세요.',
+      cacheZipError: '캐시에서 자막 ZIP 파일을 불러오는 중 오류가 발생했습니다. 자세한 내용은 브라우저 콘솔을 확인하세요.',
+      on: '켜짐',
+      off: '꺼짐',
+      all: '모두',
+      disabled: '사용 안 함'
+  },
+  'ja': {
+      menuTitle: 'Netflix subtitle downloader',
+      menuDownload: 'この字幕をダウンロード',
+      menuEpisode: 'エピソード',
+      menuMovie: '映画',
+      menuDownloadToEnd: 'このエピソードから最後まで字幕をダウンロード',
+      menuDownloadSeason: 'このシーズンの字幕をダウンロード',
+      menuDownloadAll: 'すべてのシーズンの字幕をダウンロード',
+      menuEpTitleInFilename: 'ファイル名にエピソードタイトルを追加:',
+      menuForceAllLang: 'Netflixで全言語を表示するよう強制:',
+      menuPrefLocale: '優先ロケール:',
+      menuLangSetting: 'ダウンロードする言語:',
+      menuSubFormat: '字幕形式: 優先',
+      menuBatchDelay: 'バッチ遅延:',
+      preferredLocalePrompt: 'Netflixは「すべての字幕を強制表示」機能を制限しました。現在、その言語の字幕を表示するには優先ロケールを設定する必要があります。\n可能な値（一度に1つのみ入力可能）:\n(ar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, pt-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh):',
+      downloadLangsPrompt: 'ダウンロードする言語をカンマ区切りで入力してください。すべての字幕をダウンロードするには空欄のままにしてください。\n(例: en,pt,pt-BR,fr):',
+      delayPrompt: 'バッチで字幕をダウンロードする際のページ切り替え間の遅延（秒）:',
+      subtitleUrlError: '字幕のURLが見つかりません。詳細はコンソールを確認してください！',
+      subtitleNotFound: '字幕が見つかりません。プレーヤーが読み込まれるまで待ってください。それでも解決しない場合は、ページを更新してください。',
+      cacheZipError: 'キャッシュから字幕のZIPファイルを読み込む際にエラーが発生しました。詳細はブラウザのコンソールをご覧ください。',
+      on: 'オン',
+      off: 'オフ',
+      all: 'すべて',
+      disabled: '無効'
+  },
+  'uk': {
+      menuTitle: 'Netflix subtitle downloader',
+      menuDownload: 'Завантажити субтитри для цього',
+      menuEpisode: 'епізод',
+      menuMovie: 'фільм',
+      menuDownloadToEnd: 'Завантажити субтитри від цього епізоду до останнього доступного',
+      menuDownloadSeason: 'Завантажити субтитри для цього сезону',
+      menuDownloadAll: 'Завантажити субтитри для всіх сезонів',
+      menuEpTitleInFilename: 'Додати назву епізоду до імені файлу:',
+      menuForceAllLang: 'Примусити Netflix показувати всі мови:',
+      menuPrefLocale: 'Бажана локаль:',
+      menuLangSetting: 'Мови для завантаження:',
+      menuSubFormat: 'Формат субтитрів: пріоритет',
+      menuBatchDelay: 'Затримка пакетної обробки:',
+      preferredLocalePrompt: 'Netflix обмежив використання "примусового показу всіх субтитрів". Тепер потрібно встановити бажану локаль, щоб показувати субтитри для цієї мови.\nМожливі значення (можна вводити лише по одному разу!):\n(ar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, pt-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh):',
+      downloadLangsPrompt: 'Мови для завантаження, через кому. Залиште порожнім, щоб завантажити всі субтитри.\n(Приклад: en,pt,pt-BR,fr):',
+      delayPrompt: 'Затримка (в секундах) між перемиканням сторінок при пакетному завантаженні субтитрів:',
+      subtitleUrlError: 'Не вдалося знайти URL субтитрів, перевірте консоль для отримання додаткової інформації!',
+      subtitleNotFound: 'Не вдалося знайти субтитри. Зачекайте, поки плеєр завантажиться. Якщо це не допоможе, оновіть сторінку.',
+      cacheZipError: 'Сталася помилка при завантаженні ZIP-файлу з субтитрами з кешу. Більше інформації в консолі браузера.',
+      on: 'увімкнено',
+      off: 'вимкнено',
+      all: 'всі',
+      disabled: 'відключено'
+  },
+  'es': {
+      menuTitle: 'Netflix subtitle downloader',
+      menuDownload: 'Descargar subtítulos para este',
+      menuEpisode: 'episodio',
+      menuMovie: 'película',
+      menuDownloadToEnd: 'Descargar subtítulos desde este episodio hasta el último disponible',
+      menuDownloadSeason: 'Descargar subtítulos de esta temporada',
+      menuDownloadAll: 'Descargar subtítulos de todas las temporadas',
+      menuEpTitleInFilename: 'Añadir título del episodio al nombre del archivo:',
+      menuForceAllLang: 'Forzar a Netflix a mostrar todos los idiomas:',
+      menuPrefLocale: 'Localidad preferida:',
+      menuLangSetting: 'Idiomas a descargar:',
+      menuSubFormat: 'Formato de subtítulo: preferir',
+      menuBatchDelay: 'Retraso por lotes:',
+      preferredLocalePrompt: 'Netflix limitó el uso de "forzar todos los subtítulos". Ahora debes configurar una localidad preferida para mostrar subtítulos en ese idioma.\nValores posibles (solo puedes ingresar uno a la vez!):\n(ar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, pt-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh):',
+      downloadLangsPrompt: 'Idiomas para descargar, separados por comas. Deja vacío para descargar todos los subtítulos.\n(Ejemplo: en,pt,pt-BR,fr):',
+      delayPrompt: 'Retraso (en segundos) entre cambiar páginas al descargar subtítulos en lote:',
+      subtitleUrlError: 'No se pudo encontrar la URL del subtítulo, revisa la consola para más información!',
+      subtitleNotFound: 'No se pudieron encontrar los subtítulos. Espera hasta que el reproductor esté cargado. Si no ayuda, recarga la página.',
+      cacheZipError: 'Ocurrió un error al cargar el archivo zip con subtítulos desde la caché. Más información en la consola del navegador.',
+      on: 'activado',
+      off: 'desactivado',
+      all: 'todos',
+      disabled: 'desactivado'
+  },
+  'it': {
+      menuTitle: 'Netflix subtitle downloader',
+      menuDownload: 'Scarica sottotitoli per questo',
+      menuEpisode: 'episodio',
+      menuMovie: 'film',
+      menuDownloadToEnd: 'Scarica sottotitoli da questo episodio fino all\'ultimo disponibile',
+      menuDownloadSeason: 'Scarica sottotitoli per questa stagione',
+      menuDownloadAll: 'Scarica sottotitoli per tutte le stagioni',
+      menuEpTitleInFilename: 'Aggiungi titolo episodio al nome file:',
+      menuForceAllLang: 'Forza Netflix a mostrare tutte le lingue:',
+      menuPrefLocale: 'Locale preferita:',
+      menuLangSetting: 'Lingue da scaricare:',
+      menuSubFormat: 'Formato sottotitoli: preferisci',
+      menuBatchDelay: 'Ritardo batch:',
+      preferredLocalePrompt: 'Netflix ha limitato l\'uso di "forzare tutti i sottotitoli". Ora devi impostare una locale preferita per mostrare i sottotitoli in quella lingua.\nValori possibili (puoi inserire solo uno alla volta!):\n(ar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, pt-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh):',
+      downloadLangsPrompt: 'Lingue da scaricare, separate da virgole. Lascia vuoto per scaricare tutti i sottotitoli.\n(Esempio: en,pt,pt-BR,fr):',
+      delayPrompt: 'Ritardo (in secondi) tra il cambio di pagina durante il download in batch dei sottotitoli:',
+      subtitleUrlError: 'Impossibile trovare l\'URL del sottotitolo, controlla la console per maggiori informazioni!',
+      subtitleNotFound: 'Impossibile trovare i sottotitoli. Attendi che il player sia caricato. Se non funziona, ricarica la pagina.',
+      cacheZipError: 'Si è verificato un errore durante il caricamento del file zip con i sottotitoli dalla cache. Maggiori informazioni nella console del browser.',
+      on: 'attivato',
+      off: 'disattivato',
+      all: 'tutti',
+      disabled: 'disabilitato'
+  },
+  'zh': {
+      menuTitle: 'Netflix subtitle downloader',
+      menuDownload: '下载此视频的字幕',
+      menuEpisode: '集',
+      menuMovie: '电影',
+      menuDownloadToEnd: '从本集开始下载到最后一集的字幕',
+      menuDownloadSeason: '下载本季的字幕',
+      menuDownloadAll: '下载所有季的字幕',
+      menuEpTitleInFilename: '将集标题添加到文件名：',
+      menuForceAllLang: '强制 Netflix 显示所有语言：',
+      menuPrefLocale: '首选语言环境：',
+      menuLangSetting: '下载语言：',
+      menuSubFormat: '字幕格式：优先选择',
+      menuBatchDelay: '批量延迟：',
+      preferredLocalePrompt: 'Netflix 限制了“强制所有字幕”的使用。现在你必须设置首选语言环境以显示该语言的字幕。\n可能的值（一次只能输入一个！）：\n(ar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, pt-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh)：',
+      downloadLangsPrompt: '要下载的语言，用逗号分隔。留空表示下载所有字幕。\n（例如：en,pt,pt-BR,fr）：',
+      delayPrompt: '批量下载字幕时切换页面的延迟（秒）：',
+      subtitleUrlError: '找不到字幕 URL，请检查控制台获取更多信息！',
+      subtitleNotFound: '找不到字幕。请等待播放器加载完成。如果无效，请刷新页面。',
+      cacheZipError: '加载缓存中的字幕 ZIP 文件时出错。浏览器控制台有更多信息。',
+      on: '开启',
+      off: '关闭',
+      all: '全部',
+      disabled: '禁用'
+  },
+  'ru': {
+      menuTitle: 'Netflix subtitle downloader',
+      menuDownload: 'Скачать субтитры для этого',
+      menuEpisode: 'эпизода',
+      menuMovie: 'фильма',
+      menuDownloadToEnd: 'Скачать субтитры с этого эпизода до последнего доступного',
+      menuDownloadSeason: 'Скачать субтитры для этого сезона',
+      menuDownloadAll: 'Скачать субтитры для всех сезонов',
+      menuEpTitleInFilename: 'Добавить название эпизода к имени файла:',
+      menuForceAllLang: 'Принудительно показывать все языки Netflix:',
+      menuPrefLocale: 'Предпочитаемая локаль:',
+      menuLangSetting: 'Языки для загрузки:',
+      menuSubFormat: 'Формат субтитров: предпочтительный',
+      menuBatchDelay: 'Задержка пакетной загрузки:',
+      preferredLocalePrompt: 'Netflix ограничил использование функции "принудительного отображения всех субтитров". Теперь необходимо установить предпочитаемую локаль для отображения субтитров на этом языке.\nВозможные значения (можно вводить только одно за раз!):\n(ar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, pt-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh):',
+      downloadLangsPrompt: 'Языки для загрузки через запятую. Оставьте пустым для загрузки всех субтитров.\n(Пример: en,pt,pt-BR,fr):',
+      delayPrompt: 'Задержка (в секундах) между переключением страниц при пакетной загрузке субтитров:',
+      subtitleUrlError: 'Не удалось найти URL субтитров, проверьте консоль для получения дополнительной информации!',
+      subtitleNotFound: 'Не удалось найти субтитры. Подождите, пока загрузится плеер. Если это не поможет, обновите страницу.',
+      cacheZipError: 'Произошла ошибка при загрузке ZIP-файла с субтитрами из кэша. Подробнее в консоли браузера.',
+      on: 'включено',
+      off: 'выключено',
+      all: 'все',
+      disabled: 'отключено'
+  },
+  'ar': {
+      menuTitle: 'Netflix subtitle downloader',
+      menuDownload: 'تنزيل الترجمات لهذا',
+      menuEpisode: 'الحلقة',
+      menuMovie: 'الفيلم',
+      menuDownloadToEnd: 'تنزيل الترجمات من هذه الحلقة حتى الأخيرة المتوفرة',
+      menuDownloadSeason: 'تنزيل الترجمات لهذا الموسم',
+      menuDownloadAll: 'تنزيل الترجمات لجميع المواسم',
+      menuEpTitleInFilename: 'إضافة عنوان الحلقة إلى اسم الملف:',
+      menuForceAllLang: 'إجبار Netflix على عرض جميع اللغات:',
+      menuPrefLocale: 'الإعداد المحلي المفضل:',
+      menuLangSetting: 'اللغات المراد تنزيلها:',
+      menuSubFormat: 'صيغة الترجمة: تفضيل',
+      menuBatchDelay: 'تأخير الدفعة:',
+      preferredLocalePrompt: 'حدت Netflix من استخدام "فرض كل الترجمات". الآن يجب عليك تعيين إعداد محلي مفضل لعرض الترجمات بتلك اللغة.\nالقيم الممكنة (يمكنك إدخال واحد فقط في كل مرة!):\n(ar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, pt-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh):',
+      downloadLangsPrompt: 'اللغات التي تريد تنزيلها، مفصولة بفواصل. اتركها فارغة لتنزيل كل الترجمات.\n(مثال: en,pt,pt-BR,fr):',
+      delayPrompt: 'التأخير (بالثواني) بين تبديل الصفحات عند تنزيل الترجمات دفعة واحدة:',
+      subtitleUrlError: 'تعذر العثور على رابط الترجمة، تحقق من وحدة التحكم لمزيد من المعلومات!',
+      subtitleNotFound: 'تعذر العثور على الترجمات. انتظر حتى يتم تحميل المشغل. إذا لم يساعد ذلك، قم بتحديث الصفحة.',
+      cacheZipError: 'حدث خطأ أثناء تحميل ملف ZIP الخاص بالترجمات من ذاكرة التخزين المؤقت. مزيد من المعلومات في وحدة تحكم المتصفح.',
+      on: 'تشغيل',
+      off: 'إيقاف',
+      all: 'الكل',
+      disabled: 'معطل'
+  }
+};
+
+// Get the browser language
+const browserLang = navigator.language.toLowerCase(); // ex: ex: 'pt-pt', 'fr-fr'
+
+// Mapping logic
+let userLang;
+if (browserLang === 'pt-br') {
+  userLang = 'pt-BR';
+} else if (browserLang === 'pt-pt') {
+  userLang = 'pt';
+} else if (messages.hasOwnProperty(browserLang)) {
+  userLang = browserLang;
+} else {
+  const shortLang = browserLang.split('-')[0]; // ex: 'fr-fr' → 'fr'
+  userLang = messages.hasOwnProperty(shortLang) ? shortLang : 'en';
+}
+
+const t = (key) => messages[userLang]?.[key] || messages['en'][key]; // fallback to English
+
 const DOWNLOAD_MENU = `
 <ol>
-<li class="header">Netflix subtitle downloader</li>
-<li class="download">Download subs for this <span class="series">episode</span><span class="not-series">movie</span></li>
-<li class="download-to-end series">Download subs from this ep till last available</li>
-<li class="download-season series">Download subs for this season</li>
-<li class="download-all series">Download subs for all seasons</li>
-<li class="ep-title-in-filename">Add episode title to filename: <span></span></li>
-<li class="force-all-lang">Force Netflix to show all languages: <span></span></li>
-<li class="pref-locale">Preferred locale: <span></span></li>
-<li class="lang-setting">Languages to download: <span></span></li>
-<li class="sub-format">Subtitle format: prefer <span></span></li>
-<li class="batch-delay">Batch delay: <span></span></li>
+  <li class="header">${t('menuTitle')}</li>
+  <li class="download">${t('menuDownload')} <span class="series">${t('menuEpisode')}</span><span class="not-series">${t('menuMovie')}</span></li>
+  <li class="download-to-end series">${t('menuDownloadToEnd')}</li>
+  <li class="download-season series">${t('menuDownloadSeason')}</li>
+  <li class="download-all series">${t('menuDownloadAll')}</li>
+  <li class="ep-title-in-filename">${t('menuEpTitleInFilename')} <span></span></li>
+  <li class="force-all-lang">${t('menuForceAllLang')} <span></span></li>
+  <li class="pref-locale">${t('menuPrefLocale')} <span></span></li>
+  <li class="lang-setting">${t('menuLangSetting')} <span></span></li>
+  <li class="sub-format">${t('menuSubFormat')} <span></span></li>
+  <li class="batch-delay">${t('menuBatchDelay')} <span></span></li>
 </ol>
 `;
 
 const SCRIPT_CSS = `
 #subtitle-downloader-menu {
   position: absolute;
-  display: none;
-  width: 300px;
+  display: block !important;
+  max-width: 100%;
+  width: auto;
   top: 0;
-  left: calc( 50% - 150px );
+  left: 50%;
+  transform: translateX(-50%);
+  background: #141414;
+  color: #ffffff;
+  border: 1px solid #333;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  border-radius: 4px;
+  z-index: 99999998;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+  overflow-x: auto;
+  white-space: nowrap;
 }
+
 #subtitle-downloader-menu ol {
   list-style: none;
-  position: relative;
-  width: 300px;
-  background: #333;
-  color: #fff;
   padding: 0;
-  margin: auto;
-  font-size: 12px;
-  z-index: 99999998;
+  margin: 0;
+  font-size: 13px;
 }
-body:hover #subtitle-downloader-menu { display: block; }
-#subtitle-downloader-menu li { padding: 10px; }
-#subtitle-downloader-menu li.header { font-weight: bold; }
-#subtitle-downloader-menu li:not(.header):hover { background: #666; }
+
+#subtitle-downloader-menu li {
+  padding: 10px;
+  border-bottom: 1px solid #333;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#subtitle-downloader-menu li.header {
+  font-weight: bold;
+  background: #181818;
+  cursor: default;
+  border-bottom: 1px solid #505050;
+  text-align: center;
+}
+
 #subtitle-downloader-menu li:not(.header) {
   display: none;
-  cursor: pointer;
 }
-#subtitle-downloader-menu:hover li { display: block; }
 
-#subtitle-downloader-menu:not(.series) .series{ display: none; }
-#subtitle-downloader-menu.series .not-series{ display: none; }
+#subtitle-downloader-menu li:not(.header):hover {
+  background: rgba(229, 9, 20, 0.1);
+  color: #e50914;
+}
+
+#subtitle-downloader-menu:hover li {
+  display: block;
+}
+
+#subtitle-downloader-menu:not(.series) .series { display: none; }
+#subtitle-downloader-menu.series .not-series { display: none; }
+
+#subtitle-downloader-menu:hover {
+  display: block;
+}
 `;
 
 const SUB_TYPES = {
@@ -152,16 +528,18 @@ let subFormat = localStorage.getItem('NSD_sub-format') || WEBVTT;
 let batchDelay = parseFloat(localStorage.getItem('NSD_batch-delay') || '0');
 
 const setEpTitleInFilename = () => {
-  document.querySelector('#subtitle-downloader-menu .ep-title-in-filename > span').innerHTML = (epTitleInFilename ? 'on' : 'off');
+  document.querySelector('#subtitle-downloader-menu .ep-title-in-filename > span').innerHTML = t(epTitleInFilename ? 'on' : 'off');
 };
 const setForceText = () => {
-  document.querySelector('#subtitle-downloader-menu .force-all-lang > span').innerHTML = (forceSubs ? 'on' : 'off');
+  document.querySelector('#subtitle-downloader-menu .force-all-lang > span').innerHTML = t(forceSubs ? 'on' : 'off');
 };
 const setLocaleText = () => {
-  document.querySelector('#subtitle-downloader-menu .pref-locale > span').innerHTML = (prefLocale === '' ? 'disabled' : prefLocale);
+  const text = prefLocale === '' ? t('disabled') : prefLocale;
+  document.querySelector('#subtitle-downloader-menu .pref-locale > span').textContent = text;
 };
 const setLangsText = () => {
-  document.querySelector('#subtitle-downloader-menu .lang-setting > span').innerHTML = (langs === '' ? 'all' : langs);
+  const text = langs === '' ? t('all') : langs;
+  document.querySelector('#subtitle-downloader-menu .lang-setting > span').textContent = text;
 };
 const setFormatText = () => {
   document.querySelector('#subtitle-downloader-menu .sub-format > span').innerHTML = FORMAT_NAMES[subFormat];
@@ -194,10 +572,10 @@ const toggleForceLang = () => {
   document.location.reload();
 };
 const setPreferredLocale = () => {
-  const result = prompt('Netflix limited "force all subtitles" usage. Now you have to set a preferred locale to show subtitles for that language.\nPossible values (you can enter only one at a time!):\nar, cs, da, de, el, en, es, es-ES, fi, fr, he, hi, hr, hu, id, it, ja, ko, ms, nb, nl, pl, pt, pt-BR, ro, ru, sv, ta, te, th, tr, uk, vi, zh', prefLocale);
-  if(result !== null) {
+  const result = prompt(t('preferredLocalePrompt'), prefLocale);
+  if (result !== null) {
     prefLocale = result;
-    if(prefLocale === '')
+    if (prefLocale === '')
       localStorage.removeItem('NSD_pref-locale');
     else
       localStorage.setItem('NSD_pref-locale', prefLocale);
@@ -205,7 +583,7 @@ const setPreferredLocale = () => {
   }
 };
 const setLangToDownload = () => {
-  const result = prompt('Languages to download, comma separated. Leave empty to download all subtitles.\nExample: en,de,fr', langs);
+  const result = prompt(t('downloadLangsPrompt'), langs);
   if(result !== null) {
     langs = result;
     if(langs === '')
@@ -227,7 +605,7 @@ const setSubFormat = () => {
   setFormatText();
 };
 const setBatchDelay = () => {
-  let result = prompt('Delay (in seconds) between switching pages when downloading subs in batch:', batchDelay);
+  let result = prompt(t('delayPrompt'), batchDelay);
   if(result !== null) {
     result = parseFloat(result.replace(',', '.'));
     if(result < 0 || !Number.isFinite(result))
@@ -276,7 +654,7 @@ const processSubInfo = async result => {
           console.log('processSubInfo:', lang, Object.keys(downloadables));
           if(reportError) {
             reportError = false;
-            alert("Can't find subtitle URL, check the console for more information!");
+            alert(t('subtitleUrlError'));
           }
           continue;
         }
@@ -406,7 +784,7 @@ const getXFromCache = (cache, name, silent) => {
   if(silent === true)
     return null;
 
-  alert("Couldn't find the " + name + ". Wait until the player is loaded. If that doesn't help refresh the page.");
+  alert(t('subtitleNotFound'));
   throw '';
 };
 

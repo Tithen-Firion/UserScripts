@@ -2,7 +2,7 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     4.2.8
+// @version     4.2.9
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
@@ -250,7 +250,7 @@ const popRandomElement = arr => {
 };
 
 const processSubInfo = async result => {
-  const tracks = result.timedtexttracks;
+  const tracks = result.timedtexttracks || result.textTracks;
   const subs = {};
   let reportError = true;
   for(const track of tracks) {
@@ -265,7 +265,7 @@ const processSubInfo = async result => {
 
     const formats = {};
     for(let format of ALL_FORMATS) {
-      const downloadables = track.ttDownloadables[format];
+      const downloadables = (track.ttDownloadables || track.downloadables)[format];
       if(typeof downloadables !== 'undefined') {
         let urls;
         if(typeof downloadables.downloadUrls !== 'undefined')
@@ -624,7 +624,7 @@ const injection = (ALL_FORMATS) => {
     JSON.parse = function (text) {
       const data = parse(text);
 
-      if (data && data.result && data.result.timedtexttracks && data.result.movieId) {
+      if (data && data.result && (data.result.timedtexttracks || data.result.textTracks) && data.result.movieId) {
         window.dispatchEvent(new CustomEvent('netflix_sub_downloader_data', {detail: {type: 'subs', data: data.result}}));
       }
       return data;

@@ -2,12 +2,14 @@
 // @name        Netflix - subtitle downloader
 // @description Allows you to download subtitles from Netflix
 // @license     MIT
-// @version     4.2.9
+// @version     4.3.0
 // @namespace   tithen-firion.github.io
 // @include     https://www.netflix.com/*
 // @grant       unsafeWindow
 // @require     https://cdn.jsdelivr.net/npm/jszip@3.7.1/dist/jszip.min.js
 // @require     https://cdn.jsdelivr.net/npm/file-saver-es@2.0.5/dist/FileSaver.min.js
+// @downloadURL https://update.greasyfork.org/scripts/26654/Netflix%20-%20subtitle%20downloader.user.js
+// @updateURL https://update.greasyfork.org/scripts/26654/Netflix%20-%20subtitle%20downloader.meta.js
 // ==/UserScript==
 
 class ProgressBar {
@@ -612,15 +614,138 @@ const injection = (ALL_FORMATS) => {
   const forceSubs = localStorage.getItem('NSD_force-all-lang') !== 'false';
   const prefLocale = localStorage.getItem('NSD_pref-locale') || '';
 
-  // hide the menu when we go back to the browse list
-  window.addEventListener('popstate', () => {
-    const display = (document.location.pathname.split('/')[1] === 'watch' ? '' : 'none');
-    const menu = document.querySelector('#subtitle-downloader-menu');
-    menu.style.display = display;
-  });
+  // Netflix replaced the /metadata endpoint with GraphQL (/graphql, persisted queries).
+  // These are the operations the web UI uses for the title detail modal and episode list.
+  // If Netflix changes the IDs, the new ones are picked up automatically
+  // (see JSON.stringify hook below) the next time the UI sends one of these queries.
+  const PQ_DEFAULTS = {
+    DetailModal: {id: 'd0865001-118d-438b-a55b-d5df78963df2', version: 102},
+    PreviewModalEpisodeSelector: {id: 'dbc3b274-d4f9-4811-aaf1-d082d3b936f2', version: 102},
+    PreviewModalEpisodeSelectorSeasonEpisodes: {id: '6cd10540-2b8c-47a9-adfb-2517c8c79286', version: 102},
+  };
+  const DETAIL_MODAL_VARIABLES = {
+    provideCanonicalEntityView: true,
+    loceEnabled: true,
+    includeUnlockButton: false,
+    minimizeUnlockButtonEvidence: false,
+    opaqueImageFormat: 'WEBP',
+    transparentImageFormat: 'WEBP',
+    videoMerchEnabled: false,
+    fetchPromoVideoOverride: false,
+    hasPromoVideoOverride: false,
+    promoVideoId: 0,
+    videoMerchContext: 'BROWSE',
+    isLiveEpisodic: false,
+    includeCroppedLogo: false,
+    artworkContext: {},
+    textEvidenceUiContext: 'ODP'
+  };
+  let persistedQueries = {};
+  try {
+    persistedQueries = JSON.parse(localStorage.getItem('NSD_persisted-queries')) || {};
+  }
+  catch(ignore) {}
+  const getPersistedQuery = name => persistedQueries[name] || PQ_DEFAULTS[name];
+
+  const dispatch = (type, data) => {
+    window.dispatchEvent(new CustomEvent('netflix_sub_downloader_data', {detail: {type, data}}));
+  };
 
   // hijack JSON.parse and JSON.stringify functions
   ((parse, stringify, open, realFetch) => {
+    const gql = async (operationName, variables) => {
+      const response = await realFetch('/graphql', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {'content-type': 'application/json'},
+        body: stringify({operationName, variables, extensions: {persistedQuery: getPersistedQuery(operationName)}})
+      });
+      const json = parse(await response.text());
+      if(!json.data) {
+        throw new Error(`GraphQL ${operationName} failed: ${stringify(json.errors || json).slice(0, 500)}`);
+      }
+      return json.data;
+    };
+
+    // build an object in the same shape the old /metadata endpoint returned
+    const fetchMetadata = async videoId => {
+      const detail = await gql('DetailModal', Object.assign({}, DETAIL_MODAL_VARIABLES, {unifiedEntityId: 'Video:' + videoId}));
+      const entity = detail.unifiedEntities && detail.unifiedEntities[0];
+      if(!entity)
+        throw new Error('DetailModal returned no entity for ' + videoId);
+
+      let show, currentEpisode;
+      switch(entity.__typename) {
+        case 'Movie':
+          return {video: {type: 'movie', id: entity.videoId, title: entity.title}};
+        case 'Supplemental':
+          return {video: {type: 'supplemental', id: entity.videoId, title: entity.title}};
+        case 'Episode':
+          show = entity.parentShow;
+          currentEpisode = entity.videoId;
+          break;
+        case 'Show':
+          show = entity;
+          currentEpisode = entity.currentEpisode ? entity.currentEpisode.videoId : undefined;
+          break;
+        default:
+          return {video: {type: entity.__typename, id: entity.videoId, title: entity.title}};
+      }
+
+      const seasonData = await gql('PreviewModalEpisodeSelector', {showId: show.videoId, seasonCount: 1000});
+      const seasonEdges = seasonData.videos[0].seasons.edges;
+      const seasons = [];
+      for(const [seasonIndex, {node: season}] of seasonEdges.entries()) {
+        const total = (season.episodes && season.episodes.totalCount) || 0;
+        const episodeData = await gql('PreviewModalEpisodeSelectorSeasonEpisodes', {
+          provideCanonicalEntityView: true,
+          includeEntitlementLock: false,
+          seasonId: season.videoId,
+          count: Math.max(total, 100),
+          opaqueImageFormat: 'WEBP',
+          artworkContext: {}
+        });
+        const episodes = episodeData.videos[0].episodes.edges.map(({node}, episodeIndex) => ({
+          id: node.videoId,
+          seq: (typeof node.number === 'number' ? node.number : episodeIndex + 1),
+          title: node.title,
+          hiddenEpisodeNumbers: !!(season.hiddenEpisodeNumbers || node.hideEpisodeNumbers)
+        }));
+        seasons.push({seq: seasonIndex + 1, title: season.title, episodes});
+      }
+
+      return {video: {type: 'show', id: show.videoId, title: show.title, currentEpisode, seasons}};
+    };
+
+    // watch for navigation (Netflix is a single page app)
+    let lastMetadataId = null;
+    const checkPage = () => {
+      const [, page, id] = document.location.pathname.split('/');
+      if(page !== 'watch') {
+        lastMetadataId = null;
+        const menu = document.querySelector('#subtitle-downloader-menu');
+        if(menu !== null)
+          menu.style.display = 'none';
+        return;
+      }
+      if(!id || id === lastMetadataId)
+        return;
+      lastMetadataId = id;
+      fetchMetadata(id)
+        .then(data => {
+          if(id === lastMetadataId)
+            dispatch('metadata', data);
+        })
+        .catch(error => {
+          console.error('[Netflix Subtitle Downloader] could not load metadata:', error);
+          if(id === lastMetadataId)
+            lastMetadataId = null;
+        });
+    };
+    window.addEventListener('popstate', checkPage);
+    window.setInterval(checkPage, 1000);
+    checkPage();
+
     JSON.parse = function (text) {
       const data = parse(text);
 
@@ -660,6 +785,20 @@ const injection = (ALL_FORMATS) => {
           }
         }
       }
+      // remember current persisted query IDs used by the Netflix UI
+      try {
+        if(data && typeof data.operationName === 'string' && PQ_DEFAULTS.hasOwnProperty(data.operationName)
+           && data.extensions && data.extensions.persistedQuery && data.extensions.persistedQuery.id) {
+          const {id, version} = data.extensions.persistedQuery;
+          const current = getPersistedQuery(data.operationName);
+          if(current.id !== id || current.version !== version) {
+            persistedQueries[data.operationName] = {id, version};
+            localStorage.setItem('NSD_persisted-queries', stringify(persistedQueries));
+          }
+        }
+      }
+      catch(ignore) {}
+
       if(data && typeof data.movieId === 'number') {
         try {
           let videoId = data.params.sessionParams.uiplaycontext.video_id;
@@ -671,29 +810,8 @@ const injection = (ALL_FORMATS) => {
       return stringify(data);
     };
 
-    XMLHttpRequest.prototype.open = function() {
-      if(arguments[1] && arguments[1].includes('/metadata?'))
-        this.addEventListener('load', async () => {
-          let data = this.response;
-          if(data instanceof Blob)
-            data = JSON.parse(await data.text());
-          else if(typeof data === "string")
-            data = JSON.parse(data);
-          window.dispatchEvent(new CustomEvent('netflix_sub_downloader_data', {detail: {type: 'metadata', data: data}}));
-        }, false);
-      open.apply(this, arguments);
-    };
-
-    window.fetch = async (...args) => {
-      const response = realFetch(...args);
-      if(args[0] && args[0].includes('/metadata?')) {
-        const copied = (await response).clone();
-        const data = await copied.json();
-        window.dispatchEvent(new CustomEvent('netflix_sub_downloader_data', {detail: {type: 'metadata', data: data}}));
-      }
-      return response;
-    };
-  })(JSON.parse, JSON.stringify, XMLHttpRequest.prototype.open, window.fetch);
+    // the old /metadata endpoint is gone; metadata is now loaded by fetchMetadata() above
+  })(JSON.parse, JSON.stringify, XMLHttpRequest.prototype.open, window.fetch.bind(window));
 }
 
 window.addEventListener('netflix_sub_downloader_data', processMessage, false);
